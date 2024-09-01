@@ -1,0 +1,29 @@
+// data types
+// everything is signed
+int [op] float = float
+int, float
+
+
+// adding additions 
+let variablex int
+let variable1:int := 1
+let variable2:int := 2
+let variable3:int := variable1 + variable2
+stdout(variable3)
+
+
+// subtractions
+let sub2:int = 1-2
+stdout(sub2)
+
+
+// multiplications and divisions
+
+let mul1 :int = 3
+let mul2 : float = 2.3 
+let result : float = mul1+mul2
+stdout(result)
+
+
+
+//furthur , we can add strings into print statements 
