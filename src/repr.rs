@@ -1,5 +1,6 @@
 use crate::lexer::lexer;
-
+use crate::models::TokenType;
+use crate::errors;
 use std::io::{self, Write};
 
 pub fn interactive_lexer() {
@@ -24,6 +25,10 @@ pub fn interactive_lexer() {
         let tokens = lexer(trimmed_input);
 
         for token in tokens {
+        if token.token_type == TokenType::Unknown{
+            errors::invalid_char(token.clone())
+        }
+ 
             println!("{:?}", token); // Use {:?} for Debug or {} for Display
         }
     }

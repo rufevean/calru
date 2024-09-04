@@ -1,6 +1,7 @@
 use crate::models::Position;
 use crate::models::Token;
 use crate::models::TokenType;
+use crate::errors;
 pub fn lexer(input: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
     let mut chars = input.chars().peekable();
@@ -29,10 +30,10 @@ pub fn lexer(input: &str) -> Vec<Token> {
                         num.push(chars.next().unwrap());
                         column += 1;
                     } else {
-                        break;
-                    }
+                break 
+                                            }
                 }
-                Token {
+               Token {
                     token_type: TokenType::Number,
                     value: num,
                     position: Position {

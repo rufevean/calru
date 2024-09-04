@@ -5,7 +5,7 @@ pub struct Token {
     pub position: Position,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug,PartialEq, Clone, Copy)]
 pub enum TokenType {
     Identifier,
     Number,
