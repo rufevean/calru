@@ -29,7 +29,5 @@ pub fn interactive_lexer() {
             errors::invalid_char(token.clone())
         }
  
-            println!("{:?}", token); // Use {:?} for Debug or {} for Display
-        }
-    }
+            println!("{:?}", token);     }
 }

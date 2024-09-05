@@ -41,8 +41,8 @@ pub fn lexer(input: &str) -> Vec<Token> {
                         column: start_column,
                     },
                 }
-            }
-            'a'..='z' | 'A'..='Z' | '_' => {
+
+              }              'a'..='z' | 'A'..='Z' | '_' => {
                 let start_column = column;
                 let mut ident = String::new();
                 while let Some(&letter) = chars.peek() {
@@ -66,7 +66,8 @@ pub fn lexer(input: &str) -> Vec<Token> {
                         column: start_column,
                     },
                 }
-            }
+            },
+            
             ':' => {
                 let mut token;
                 chars.next();
