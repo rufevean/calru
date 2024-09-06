@@ -1,0 +1,8 @@
+Statement   → LetDecl
+LetDecl     → 'let' Identifier ':' Type AssignExpr ';'
+AssignExpr  → ':=' Expression
+Expression  → Term (('+' | '-') Term)*
+Term        → Factor (('*' | '/') Factor)*
+Factor      → Number | Identifier | '(' Expression ')'
+
+//Multiplication and division (handled by Term) have higher precedence than addition and subtraction (handled by Expression).

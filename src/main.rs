@@ -2,6 +2,7 @@ use std::fs;
 mod lexer;
 mod util;
 mod models;
+mod parser;
 mod repr;
 mod errors;
 use crate::models::TokenType;

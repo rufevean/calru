@@ -1,4 +1,5 @@
 pub mod lexer ;
 pub mod models;
 pub mod errors; 
-pub mod uitl;
+pub mod util;
+pub mod parser;
