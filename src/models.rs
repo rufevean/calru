@@ -9,6 +9,7 @@ pub struct Token {
 pub enum TokenType {
     Identifier,
     Number,
+    FloatNumber,
     Let,
     Operator,
     Assign,

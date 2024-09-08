@@ -2,6 +2,7 @@ use std::fs;
 mod lexer;
 mod util;
 mod models;
+mod ast;
 mod parser;
 mod repr;
 mod errors;

@@ -1,7 +1,7 @@
-use crate::models::Position;
-use crate::models::Token;
-use crate::models::TokenType;
+
+use crate::models::{Position, Token, TokenType};
 use crate::errors;
+
 pub fn lexer(input: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
     let mut chars = input.chars().peekable();
@@ -21,28 +21,38 @@ pub fn lexer(input: &str) -> Vec<Token> {
                 column = 1;
                 continue;
             }
-
             '0'..='9' => {
                 let start_column = column;
                 let mut num = String::new();
+                let mut has_dot = false;
+
                 while let Some(&digit) = chars.peek() {
                     if digit.is_numeric() {
                         num.push(chars.next().unwrap());
                         column += 1;
+                    } else if digit == '.' {
+                        if has_dot {
+                            break; 
+                        }
+                        has_dot = true;
+                        num.push(chars.next().unwrap());
+                        column += 1;
                     } else {
-                break 
-                                            }
-                }
-               Token {
-                    token_type: TokenType::Number,
-                    value: num,
-                    position: Position {
-                        line,
-                        column: start_column,
-                    },
+                        break;
+                    }
                 }
 
-              }              'a'..='z' | 'A'..='Z' | '_' => {
+                Token {
+                    token_type: if has_dot {
+                        TokenType::FloatNumber
+                    } else {
+                        TokenType::Number
+                    },
+                    value: num,
+                    position: Position { line, column: start_column },
+                }
+            }
+            'a'..='z' | 'A'..='Z' | '_' => {
                 let start_column = column;
                 let mut ident = String::new();
                 while let Some(&letter) = chars.peek() {
@@ -61,18 +71,14 @@ pub fn lexer(input: &str) -> Vec<Token> {
                 Token {
                     token_type,
                     value: ident,
-                    position: Position {
-                        line,
-                        column: start_column,
-                    },
+                    position: Position { line, column: start_column },
                 }
-            },
-            
+            }
             ':' => {
                 let mut token;
                 chars.next();
-                if chars.peek().map_or(false, |&next_ch| next_ch == '=') {
-                    chars.next(); // Consume the '='
+                if chars.peek() == Some(&'=') {
+                    chars.next(); 
                     token = Token {
                         token_type: TokenType::Assign,
                         value: ":=".to_string(),
@@ -82,50 +88,40 @@ pub fn lexer(input: &str) -> Vec<Token> {
                 } else {
                     let next_word: String = chars.clone().take(5).collect();
                     if next_word.starts_with("int") {
-                        chars.next();
-                        chars.next();
-                        chars.next();
+                        chars.by_ref().take(3).for_each(|_| column += 1);
                         token = Token {
                             token_type: TokenType::IntType,
                             value: "int".to_string(),
                             position: Position { line, column },
                         };
-                        column += 3;
                     } else if next_word.starts_with("float") {
-                        chars.next();
-                        chars.next();
-                        chars.next();
-                        chars.next();
-                        chars.next();
+                        chars.by_ref().take(5).for_each(|_| column += 1);
                         token = Token {
                             token_type: TokenType::FloatType,
                             value: "float".to_string(),
                             position: Position { line, column },
                         };
-                        column += 5;
                     } else {
                         token = Token {
                             token_type: TokenType::Operator,
-                            value: ch.to_string(),
+                            value: ":".to_string(),
                             position: Position { line, column },
                         };
                         column += 1;
                     }
                 }
-
-                chars.next();
                 token
             }
             '/' => {
                 if chars.peek() == Some(&'/') {
-                    chars.next();
-
+                    chars.next(); // Consume the '/'
                     while let Some(&next_ch) = chars.peek() {
                         if next_ch == '\n' {
                             break;
                         }
                         chars.next();
                     }
+                    column = if let Some(&'\n') = chars.peek() { column + 1 } else { column };
                     continue;
                 } else {
                     Token {

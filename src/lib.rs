@@ -3,3 +3,4 @@ pub mod models;
 pub mod errors; 
 pub mod util;
 pub mod parser;
+pub mod ast;
