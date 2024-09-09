@@ -21,7 +21,7 @@ pub enum TokenType {
     FloatType,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy,PartialEq)]
 pub struct Position {
     pub line: usize,
     pub column: usize,

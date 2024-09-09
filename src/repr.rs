@@ -4,10 +4,14 @@ use crate::models::{TokenType, Token};
 use crate::parser::Parser;
 use crate::errors;
 use crate::ast::AST;
+use crate::symbol_table::SymbolTable;
 use std::io::{self, Write};
 
 pub fn interactive_lexer() {
     println!("Welcome to the Lexer CLI. Enter your code and press Enter:");
+
+    // Initialize the symbol table once for the interactive session
+    let mut symbol_table = SymbolTable::new();
 
     loop {
         print!(">>> ");
@@ -36,7 +40,7 @@ pub fn interactive_lexer() {
 
         let mut parser = Parser::new(tokens);
 
-        match parser.parse_statement() {
+        match parser.parse_statement(&mut symbol_table) {
             Ok(ast) => println!("Parsed AST:\n{}", ast),
             Err(e) => println!("Parsing failed: {}", e),
         }

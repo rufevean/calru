@@ -6,6 +6,7 @@ mod ast;
 mod parser;
 mod repr;
 mod errors;
+mod symbol_table;
 use crate::models::TokenType;
 fn main() {
     let input =
