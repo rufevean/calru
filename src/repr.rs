@@ -1,16 +1,15 @@
 
 use crate::lexer::lexer;
-use crate::models::{TokenType, Token};
+use crate::models::TokenType;
 use crate::parser::Parser;
 use crate::errors;
-use crate::ast::AST;
 use crate::symbol_table::SymbolTable;
+use crate::ir::generator::generate_ir;
 use std::io::{self, Write};
 
 pub fn interactive_lexer() {
-    println!("Welcome to the Lexer CLI. Enter your code and press Enter:");
+    println!("Welcome to the Calru. Enter your code and press Enter:");
 
-    // Initialize the symbol table once for the interactive session
     let mut symbol_table = SymbolTable::new();
 
     loop {
@@ -25,23 +24,23 @@ pub fn interactive_lexer() {
         let trimmed_input = input.trim();
 
         if trimmed_input.is_empty() {
-            println!("Exiting the lexer. Goodbye!");
+            println!("Exiting the Repr. Goodbye!");
             break;
         }
 
         let tokens = lexer(trimmed_input);
-
-        for token in &tokens {
-            if token.token_type == TokenType::Unknown {
-                errors::invalid_char(token.clone());
-            }
-            println!("{:?}", token);
-        }
-
         let mut parser = Parser::new(tokens);
 
         match parser.parse_statement(&mut symbol_table) {
-            Ok(ast) => println!("Parsed AST:\n{}", ast),
+            Ok(ast) => {
+                println!("Parsed AST:\n{}", ast);
+                let instructions = generate_ir(&ast);
+
+                println!("Generated Assembly Instructions:");
+                for instruction in instructions {
+                    println!("{:?}", instruction);
+                }
+            }
             Err(e) => println!("Parsing failed: {}", e),
         }
     }

@@ -3,7 +3,8 @@ use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ASTNode {
-    Number(f64),
+    Int(i64),
+    Float(f64),
     Identifier(String),
     BinaryOperation {
         operator: String,
@@ -33,10 +34,12 @@ impl fmt::Display for AST {
     }
 }
 
+
 impl fmt::Display for ASTNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ASTNode::Number(n) => write!(f, "Number({})", n),
+            ASTNode::Int(n) => write!(f, "Int({})", n),
+            ASTNode::Float(n) => write!(f, "Float({})", n),
             ASTNode::Identifier(id) => write!(f, "Identifier({})", id),
             ASTNode::BinaryOperation { operator, left, right } => {
                 write!(f, "BinaryOperation({} {} {})", left, operator, right)
@@ -47,3 +50,4 @@ impl fmt::Display for ASTNode {
         }
     }
 }
+

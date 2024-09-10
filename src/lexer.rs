@@ -1,6 +1,5 @@
 
 use crate::models::{Position, Token, TokenType};
-use crate::errors;
 
 pub fn lexer(input: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
@@ -21,37 +20,38 @@ pub fn lexer(input: &str) -> Vec<Token> {
                 column = 1;
                 continue;
             }
-            '0'..='9' => {
-                let start_column = column;
-                let mut num = String::new();
-                let mut has_dot = false;
 
-                while let Some(&digit) = chars.peek() {
-                    if digit.is_numeric() {
-                        num.push(chars.next().unwrap());
-                        column += 1;
-                    } else if digit == '.' {
-                        if has_dot {
-                            break; 
-                        }
-                        has_dot = true;
-                        num.push(chars.next().unwrap());
-                        column += 1;
-                    } else {
-                        break;
-                    }
-                }
+'0'..='9' => {
+    let start_column = column;
+    let mut num = String::new();
+    let mut has_dot = false;
 
-                Token {
-                    token_type: if has_dot {
-                        TokenType::FloatNumber
-                    } else {
-                        TokenType::Number
-                    },
-                    value: num,
-                    position: Position { line, column: start_column },
-                }
+    while let Some(&digit) = chars.peek() {
+        if digit.is_numeric() {
+            num.push(chars.next().unwrap());
+            column += 1;
+        } else if digit == '.' {
+            if has_dot {
+                break; 
             }
+            has_dot = true;
+            num.push(chars.next().unwrap());
+            column += 1;
+        } else {
+            break;
+        }
+    }
+
+    Token {
+        token_type: if has_dot {
+            TokenType::FloatNumber
+        } else {
+            TokenType::Number
+        },
+        value: num,
+        position: Position { line, column: start_column },
+    }
+}
             'a'..='z' | 'A'..='Z' | '_' => {
                 let start_column = column;
                 let mut ident = String::new();

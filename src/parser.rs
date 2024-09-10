@@ -35,50 +35,58 @@ impl Parser {
         }
     }
 
-    pub fn parse_let_decl(&mut self, symbol_table: &mut SymbolTable) -> Result<AST, String> {
-        if !self.current_token_is(TokenType::Let) {
-            return Err(format!("Expected 'let' at position {:?}. Found {:?}", self.position, self.current_token));
-        }
-
-        self.advance();
-
-        if !self.current_token_is(TokenType::Identifier) {
-            return Err(format!("Expected identifier at position {:?}. Found {:?}", self.position, self.current_token));
-        }
-
-        let variable = self.current_token.as_ref().unwrap().value.clone();
-        if symbol_table.lookup(&variable).is_some() {
-            return Err(format!(
-                "Variable '{}' already declared at position {:?}.",
-                variable, self.position
-            ));
-        }
-
-        self.advance();
-
-        let symbol_type = if self.current_token_is(TokenType::IntType) {
-            SymbolType::Int
-        } else if self.current_token_is(TokenType::FloatType) {
-            SymbolType::Float
-        } else {
-            return Err(format!(
-                "Expected type 'int' or 'float' at position {:?}. Found {:?}.",
-                self.position, self.current_token
-            ));
-        };
-        self.advance();
-
-        symbol_table.insert(variable.clone(), symbol_type.clone())
-            .map_err(|e| format!("Error inserting symbol into symbol table: {}", e))?;
-
-        let expression = self.parse_assign_expr()?;
-
-        Ok(AST::new(ASTNode::Assignment {
-            variable,
-            expression: Box::new(expression),
-        }))
+  
+pub fn parse_let_decl(&mut self, symbol_table: &mut SymbolTable) -> Result<AST, String> {
+    if !self.current_token_is(TokenType::Let) {
+        return Err(format!("Expected 'let' at position {:?}. Found {:?}", self.position, self.current_token));
     }
 
+    self.advance();
+
+    if !self.current_token_is(TokenType::Identifier) {
+        return Err(format!("Expected identifier at position {:?}. Found {:?}", self.position, self.current_token));
+    }
+
+    let variable = self.current_token.as_ref().unwrap().value.clone();
+    if symbol_table.lookup(&variable).is_some() {
+        return Err(format!(
+            "Variable '{}' already declared at position {:?}.",
+            variable, self.position
+        ));
+    }
+
+    self.advance();
+
+    let symbol_type = if self.current_token_is(TokenType::IntType) {
+        SymbolType::Int
+    } else if self.current_token_is(TokenType::FloatType) {
+        SymbolType::Float
+    } else {
+        return Err(format!(
+            "Expected type 'int' or 'float' at position {:?}. Found {:?}.",
+            self.position, self.current_token
+        ));
+    };
+    self.advance();
+
+    symbol_table.insert(variable.clone(), symbol_type.clone())
+        .map_err(|e| format!("Error inserting symbol into symbol table: {}", e))?;
+
+    let expression = self.parse_assign_expr()?;
+
+    let expr_type = self.infer_type(&expression)?;
+    if expr_type != symbol_type {
+        return Err(format!(
+            "Type mismatch: cannot assign expression of type {:?} to variable of type {:?} at position {:?}.",
+            expr_type, symbol_type, self.position
+        ));
+    }
+
+    Ok(AST::new(ASTNode::Assignment {
+        variable,
+        expression: Box::new(expression),
+    }))
+}
     pub fn parse_expression(&mut self) -> Result<AST, String> {
         let mut left = self.parse_term()?;
         let mut left_type = self.infer_type(&left)?;
@@ -143,31 +151,33 @@ impl Parser {
         Ok(left)
     }
 
-    pub fn parse_factor(&mut self) -> Result<AST, String> {
-        match self.current_token {
-            Some(ref token) if token.token_type == TokenType::Number => {
-                let value = token.value.parse::<f64>()
-                    .map_err(|_| format!("Invalid number format at position {:?}.", self.position))?;
-                self.advance();
-                Ok(AST::new(ASTNode::Number(value)))
-            },
-            Some(ref token) if token.token_type == TokenType::FloatNumber => {
-                let value = token.value.parse::<f64>()
-                    .map_err(|_| format!("Invalid float format at position {:?}.", self.position))?;
-                self.advance();
-                Ok(AST::new(ASTNode::Number(value)))
-            },
-            Some(ref token) if token.token_type == TokenType::Identifier => {
-                let value = token.value.clone();
-                if self.symbol_table.lookup(&value).is_none() {
-                    return Err(format!("Undeclared variable '{}' at position {:?}.", value, self.position));
-                }
-                self.advance();
-                Ok(AST::new(ASTNode::Identifier(value)))
-            },
-            _ => Err(format!("Unexpected token {:?} at position {:?}. Expected a number, float, or identifier.", self.current_token, self.position)),
-        }
+
+pub fn parse_factor(&mut self) -> Result<AST, String> {
+    match self.current_token {
+        Some(ref token) if token.token_type == TokenType::Number => {
+            let value = token.value.parse::<i64>()
+                .map_err(|_| format!("Invalid integer format at position {:?}.", self.position))?;
+            self.advance();
+            Ok(AST::new(ASTNode::Int(value)))
+        },
+        Some(ref token) if token.token_type == TokenType::FloatNumber => {
+            let value = token.value.parse::<f64>()
+                .map_err(|_| format!("Invalid float format at position {:?}.", self.position))?;
+            self.advance();
+            Ok(AST::new(ASTNode::Float(value)))
+        },
+        Some(ref token) if token.token_type == TokenType::Identifier => {
+            let value = token.value.clone();
+            if self.symbol_table.lookup(&value).is_none() {
+                return Err(format!("Undeclared variable '{}' at position {:?}.", value, self.position));
+            }
+            self.advance();
+            Ok(AST::new(ASTNode::Identifier(value)))
+        },
+        _ => Err(format!("Unexpected token {:?} at position {:?}. Expected a number, float, or identifier.", self.current_token, self.position)),
     }
+}
+
 
     pub fn parse_assign_expr(&mut self) -> Result<AST, String> {
         if !self.current_token_is(TokenType::Assign) {
@@ -215,27 +225,30 @@ impl Parser {
         }
     }
 
-    fn infer_type(&self, node: &AST) -> Result<SymbolType, String> {
-        match &node.node {
-            ASTNode::Number(_) => Ok(SymbolType::Float),
-            ASTNode::Identifier(ref id) => {
-                self.symbol_table.lookup(id)
-                    .cloned()
-                    .ok_or_else(|| format!("Undeclared variable '{}' at position {:?}.", id, self.position))
-            },
-            ASTNode::BinaryOperation { left, right, .. } => {
-                let left_type = self.infer_type(left)?;
-                let right_type = self.infer_type(right)?;
-                if left_type == right_type {
-                    Ok(left_type)
-                } else {
-                    Err(format!(
-                        "Type mismatch in binary operation at position {:?}. Expected {:?}, found {:?}.",
-                        self.position, left_type, right_type
-                    ))
-                }
-            },
-            ASTNode::Assignment { expression, .. } => self.infer_type(expression),
-        }
+
+
+fn infer_type(&self, node: &AST) -> Result<SymbolType, String> {
+    match &node.node {
+        ASTNode::Int(_) => Ok(SymbolType::Int),
+        ASTNode::Float(_) => Ok(SymbolType::Float),
+        ASTNode::Identifier(ref id) => {
+            self.symbol_table.lookup(id)
+                .cloned()
+                .ok_or_else(|| format!("Undeclared variable '{}' at position {:?}.", id, self.position))
+        },
+        ASTNode::BinaryOperation { left, right, .. } => {
+            let left_type = self.infer_type(left)?;
+            let right_type = self.infer_type(right)?;
+            if left_type == right_type {
+                Ok(left_type)
+            } else {
+                Err(format!(
+                    "Type mismatch in binary operation at position {:?}. Expected {:?}, found {:?}.",
+                    self.position, left_type, right_type
+                ))
+            }
+        },
+        ASTNode::Assignment { expression, .. } => self.infer_type(expression),
     }
+}
 }

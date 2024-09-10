@@ -17,7 +17,6 @@ fn test_let_decl() {
         Token { token_type: TokenType::EOF, value: "".to_string(), position: Position { line: 1, column: 17 } },
     ];
 
-    let tokens = tokens.clone(); // Clone the tokens for use with the parser
     let mut symbol_table = SymbolTable::new(); // Initialize the symbol table
     let mut parser = Parser::new(tokens);
 
@@ -25,12 +24,11 @@ fn test_let_decl() {
 
     let expected_ast = AST::new(ASTNode::Assignment {
         variable: "x".to_string(),
-        expression: Box::new(AST::new(ASTNode::Number(42.0))),
+        expression: Box::new(AST::new(ASTNode::Int(42))),
     });
 
     assert_eq!(ast, expected_ast);
 }
-
 
 #[test]
 fn test_expression_parsing() {
@@ -46,8 +44,8 @@ fn test_expression_parsing() {
 
     let expected_ast = AST::new(ASTNode::BinaryOperation {
         operator: "+".to_string(),
-        left: Box::new(AST::new(ASTNode::Number(3.0))),
-        right: Box::new(AST::new(ASTNode::Number(4.0))),
+        left: Box::new(AST::new(ASTNode::Int(3))),
+        right: Box::new(AST::new(ASTNode::Int(4))),
     });
 
     assert_eq!(ast, expected_ast);
@@ -71,10 +69,10 @@ fn test_expression_with_precedence() {
         operator: "+".to_string(),
         left: Box::new(AST::new(ASTNode::BinaryOperation {
             operator: "*".to_string(),
-            left: Box::new(AST::new(ASTNode::Number(2.0))),
-            right: Box::new(AST::new(ASTNode::Number(3.0))),
+            left: Box::new(AST::new(ASTNode::Int(2))),
+            right: Box::new(AST::new(ASTNode::Int(3))),
         })),
-        right: Box::new(AST::new(ASTNode::Number(4.0))),
+        right: Box::new(AST::new(ASTNode::Int(4))),
     });
 
     assert_eq!(ast, expected_ast);
@@ -100,19 +98,18 @@ fn test_complex_expression() {
         operator: "+".to_string(),
         left: Box::new(AST::new(ASTNode::BinaryOperation {
             operator: "*".to_string(),
-            left: Box::new(AST::new(ASTNode::Number(2.0))),
-            right: Box::new(AST::new(ASTNode::Number(3.0))),
+            left: Box::new(AST::new(ASTNode::Int(2))),
+            right: Box::new(AST::new(ASTNode::Int(3))),
         })),
         right: Box::new(AST::new(ASTNode::BinaryOperation {
             operator: "*".to_string(),
-            left: Box::new(AST::new(ASTNode::Number(4.0))),
-            right: Box::new(AST::new(ASTNode::Number(5.0))),
+            left: Box::new(AST::new(ASTNode::Int(4))),
+            right: Box::new(AST::new(ASTNode::Int(5))),
         })),
     });
 
     assert_eq!(ast, expected_ast);
 }
-
 
 #[test]
 fn test_missing_variable() {
