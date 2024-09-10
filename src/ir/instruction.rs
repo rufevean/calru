@@ -7,7 +7,6 @@ pub enum IRInstruction {
     Sub { dest: String, src: String },
     Mul { dest: String, src: String },
     Div { dest: String, src: String },
-    // Add more instructions as needed
 }
 
 
@@ -19,7 +18,6 @@ impl IRInstruction {
             IRInstruction::Sub { dest, src } => format!("SUB {}, {}", dest, src),
             IRInstruction::Mul { dest, src } => format!("MUL {}, {}", dest, src),
             IRInstruction::Div { dest, src } => format!("DIV {}, {}", dest, src),
-            // Handle more instructions if you add them
         }
     }
 }
