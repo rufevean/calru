@@ -31,7 +31,7 @@ pub fn interactive_lexer() {
         let tokens = lexer(trimmed_input);
         let mut parser = Parser::new(tokens);
 
-        match parser.parse_statement(&mut symbol_table) {
+        match parser.parse_statement() {
             Ok(ast) => {
                 println!("Parsed AST:\n{}", ast);
                 let instructions = generate_ir(&ast);

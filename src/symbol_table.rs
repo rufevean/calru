@@ -32,4 +32,10 @@ impl SymbolTable {
     pub fn lookup(&self, name: &str) -> Option<&SymbolType> {
         self.symbols.get(name)
     }
+    pub fn print(&self) {
+        println!("Symbol Table:");
+        for (name, symbol_type) in &self.symbols {
+            println!("{}: {:?}", name, symbol_type);
+        }
+    }
 }
