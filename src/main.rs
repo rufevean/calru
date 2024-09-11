@@ -1,20 +1,21 @@
 
-use std::fs;
-
 mod lexer;
-mod util;
 mod models;
-mod ast;
-mod parser;
-mod repr;
 mod errors;
+mod parser;
 mod symbol_table;
-mod ir; 
+mod ir;
+mod interpreter;
+mod ast;
 
 use crate::models::TokenType;
 use crate::parser::Parser;
 use crate::symbol_table::SymbolTable;
 use crate::ir::generator::generate_ir;
+use crate::ir::instruction::write_asm_file;
+use crate::interpreter::Interpreter;
+use crate::ast::AST; // Ensure correct import
+use std::fs;
 
 fn main() {
     // Read the input file
@@ -30,31 +31,42 @@ fn main() {
         if token.token_type == TokenType::Unknown {
             errors::invalid_char(token.clone());
         }
-        println!("{:?}", token);
     }
 
-    // Initialize the parser and symbol table
+    // Initialize the parser
     let mut parser = Parser::new(tokens);
-    let mut symbol_table = SymbolTable::new();
 
     // Parse the tokens into an AST and print the AST
+    match parser.parse_program() {
+        Ok(asts) => {
+            let mut all_instructions = Vec::new();
 
-match parser.parse_program() {
-    Ok(asts) => {
-        for ast in asts {
-            println!("Parsed AST:\n{}", ast);
+            for ast in &asts { // Use reference to avoid unnecessary cloning
+                // Generate IR instructions
+                let instructions = generate_ir(ast);
+                all_instructions.extend(instructions.clone());
 
-            let instructions = generate_ir(&ast);
+                // Print instructions (for debugging purposes)
+                for instruction in &instructions {
+                    println!("{:?}", instruction);
+                }
+            }
 
-            println!("Generated Assembly Instructions:");
-            for instruction in instructions {
-                println!("{:?}", instruction);
+            // Write instructions to an assembly file
+            if let Err(e) = write_asm_file(&all_instructions, "output.asm") {
+                eprintln!("Failed to write assembly file: {}", e);
+            }
+
+            // Initialize the interpreter
+            let mut interpreter = Interpreter::new();
+
+            // Execute the AST
+            for ast in asts {
+                if let Err(e) = interpreter.run(vec![ast]) {
+                    eprintln!("Execution error: {}", e);
+                }
             }
         }
+        Err(e) => eprintln!("Error: {}", e),
     }
-    Err(e) => eprintln!("Error: {}", e),
-}
-
-    // Start the interactive lexer (optional)
-    repr::interactive_lexer(); 
 }

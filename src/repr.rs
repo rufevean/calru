@@ -6,9 +6,10 @@ use crate::errors;
 use crate::symbol_table::SymbolTable;
 use crate::ir::generator::generate_ir;
 use std::io::{self, Write};
+use crate::ast::AST;  // Import the AST type to match the expected type in generate_ir
 
 pub fn interactive_lexer() {
-    println!("Welcome to the Calru. Enter your code and press Enter:");
+    println!("Welcome to Calru. Enter your code and press Enter:");
 
     let mut symbol_table = SymbolTable::new();
 
@@ -24,7 +25,7 @@ pub fn interactive_lexer() {
         let trimmed_input = input.trim();
 
         if trimmed_input.is_empty() {
-            println!("Exiting the Repr. Goodbye!");
+            println!("Exiting the REPL. Goodbye!");
             break;
         }
 

@@ -21,37 +21,38 @@ pub fn lexer(input: &str) -> Vec<Token> {
                 continue;
             }
 
-'0'..='9' => {
-    let start_column = column;
-    let mut num = String::new();
-    let mut has_dot = false;
+            '0'..='9' => {
+                let start_column = column;
+                let mut num = String::new();
+                let mut has_dot = false;
 
-    while let Some(&digit) = chars.peek() {
-        if digit.is_numeric() {
-            num.push(chars.next().unwrap());
-            column += 1;
-        } else if digit == '.' {
-            if has_dot {
-                break; 
+                while let Some(&digit) = chars.peek() {
+                    if digit.is_numeric() {
+                        num.push(chars.next().unwrap());
+                        column += 1;
+                    } else if digit == '.' {
+                        if has_dot {
+                            break; 
+                        }
+                        has_dot = true;
+                        num.push(chars.next().unwrap());
+                        column += 1;
+                    } else {
+                        break;
+                    }
+                }
+
+                Token {
+                    token_type: if has_dot {
+                        TokenType::FloatNumber
+                    } else {
+                        TokenType::Number
+                    },
+                    value: num,
+                    position: Position { line, column: start_column },
+                }
             }
-            has_dot = true;
-            num.push(chars.next().unwrap());
-            column += 1;
-        } else {
-            break;
-        }
-    }
 
-    Token {
-        token_type: if has_dot {
-            TokenType::FloatNumber
-        } else {
-            TokenType::Number
-        },
-        value: num,
-        position: Position { line, column: start_column },
-    }
-}
             'a'..='z' | 'A'..='Z' | '_' => {
                 let start_column = column;
                 let mut ident = String::new();
@@ -63,10 +64,10 @@ pub fn lexer(input: &str) -> Vec<Token> {
                         break;
                     }
                 }
-                let token_type = if ident == "let" {
-                    TokenType::Let
-                } else {
-                    TokenType::Identifier
+                let token_type = match ident.as_str() {
+                    "let" => TokenType::Let,
+                    "stdout" => TokenType::Print,
+                    _ => TokenType::Identifier,
                 };
                 Token {
                     token_type,
@@ -74,6 +75,7 @@ pub fn lexer(input: &str) -> Vec<Token> {
                     position: Position { line, column: start_column },
                 }
             }
+
             ':' => {
                 let mut token;
                 chars.next();
@@ -112,6 +114,7 @@ pub fn lexer(input: &str) -> Vec<Token> {
                 }
                 token
             }
+
             '/' => {
                 if chars.peek() == Some(&'/') {
                     chars.next(); // Consume the '/'
@@ -131,6 +134,7 @@ pub fn lexer(input: &str) -> Vec<Token> {
                     }
                 }
             }
+
             '+' | '-' | '*' | '/' => {
                 let token = Token {
                     token_type: TokenType::Operator,
@@ -141,6 +145,29 @@ pub fn lexer(input: &str) -> Vec<Token> {
                 column += 1;
                 token
             }
+
+            '(' => {
+                let token = Token {
+                    token_type: TokenType::LeftParen,
+                    value: ch.to_string(),
+                    position: Position { line, column },
+                };
+                chars.next();
+                column += 1;
+                token
+            }
+
+            ')' => {
+                let token = Token {
+                    token_type: TokenType::RightParen,
+                    value: ch.to_string(),
+                    position: Position { line, column },
+                };
+                chars.next();
+                column += 1;
+                token
+            }
+
             ';' => {
                 let token = Token {
                     token_type: TokenType::Termination,
@@ -151,6 +178,7 @@ pub fn lexer(input: &str) -> Vec<Token> {
                 column += 1;
                 token
             }
+
             _ => {
                 let token = Token {
                     token_type: TokenType::Unknown,

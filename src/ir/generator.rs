@@ -8,6 +8,7 @@ pub fn generate_ir(ast: &AST) -> Vec<IRInstruction> {
     instructions
 }
 
+
 fn generate_ir_node(node: &AST, instructions: &mut Vec<IRInstruction>) {
     match &node.node {
         ASTNode::Int(value) => {
@@ -33,6 +34,10 @@ fn generate_ir_node(node: &AST, instructions: &mut Vec<IRInstruction>) {
         ASTNode::Assignment { variable, expression } => {
             generate_ir_node(expression, instructions);
             instructions.push(IRInstruction::Mov { dest: variable.clone(), src: "R0".to_string() });
+        }
+        ASTNode::Print(operand) => {
+            generate_ir_node(operand, instructions);
+            instructions.push(IRInstruction::Print { operand: "R0".to_string() });
         }
     }
 }

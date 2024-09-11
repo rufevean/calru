@@ -6,3 +6,4 @@ pub mod parser;
 pub mod ast;
 pub mod symbol_table;
 pub mod ir;
+pub mod interpreter;

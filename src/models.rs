@@ -16,6 +16,9 @@ pub enum TokenType {
     Unknown,
     Termination,
     EOF,
+    Print,
+    RightParen,
+    LeftParen,
     // Data types
     IntType,
     FloatType,

@@ -1,8 +1,23 @@
+
+// Top-level statements
 Statement   → LetDecl
+            | PrintStmt
+
+// Declaration of variables
 LetDecl     → 'let' Identifier ':' Type AssignExpr ';'
+
+// Expression assignment
 AssignExpr  → ':=' Expression
+
+// Print statement
+PrintStmt   → 'stdout' '(' Expression ')'
+
+// Expressions and terms
 Expression  → Term (('+' | '-') Term)*
 Term        → Factor (('*' | '/') Factor)*
-Factor      → Number | Identifier | '(' Expression ')'
 
-//Multiplication and division (handled by Term) have higher precedence than addition and subtraction (handled by Expression).
+// Factors and operands
+Factor      → Number
+            | Identifier
+            | '(' Expression ')'
+ion).

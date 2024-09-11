@@ -15,6 +15,7 @@ pub enum ASTNode {
         variable: String,
         expression: Box<AST>,
     },
+    Print(Box<AST>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -35,6 +36,8 @@ impl fmt::Display for AST {
 }
 
 
+
+
 impl fmt::Display for ASTNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -47,7 +50,9 @@ impl fmt::Display for ASTNode {
             ASTNode::Assignment { variable, expression } => {
                 write!(f, "Assignment({} = {})", variable, expression)
             }
+            ASTNode::Print(expression) => {
+                write!(f, "Print({})", expression)
+            }
         }
     }
 }
-
