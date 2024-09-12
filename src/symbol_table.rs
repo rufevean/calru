@@ -19,7 +19,7 @@ pub struct Symbol {
     pub value: SymbolValue,
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct SymbolTable {
     symbols: HashMap<String, Symbol>,
 }

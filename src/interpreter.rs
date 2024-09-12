@@ -8,11 +8,11 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
-    pub fn new() -> Self {
-        Interpreter {
-            symbol_table: SymbolTable::new(),
-        }
+pub fn new(symbol_table: SymbolTable) -> Self {
+    Interpreter {
+        symbol_table,
     }
+}
 
     pub fn run(&mut self, statements: Vec<AST>) -> Result<(), String> {
         for statement in statements {
@@ -45,7 +45,7 @@ impl Interpreter {
             },
             _ => return Err(format!("Unsupported statement {:?}", ast.node)),
         }
-        Ok(()) // Ensure functions return `Result<(), String>`
+        Ok(())
     }
 
     fn evaluate_expression(&self, expression: &AST) -> Result<SymbolValue, String> {
@@ -135,7 +135,6 @@ impl Interpreter {
     }
 }
 
-// Implement Display for SymbolValue for better output formatting
 impl fmt::Display for SymbolValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

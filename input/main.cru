@@ -1,4 +1,7 @@
-let v1 :int := 12;
-let v2 :int := 13; 
-let v3 :int := v2 + v1; 
-stdout(v3);
+let num1 :float := 2.5;
+let num2 :float := 4.0;
+let num3 :float := 3.0;
+let num4 :float := 1.5;
+let product :float := num1 * num2 * num3 * num4;
+stdout(product);
+

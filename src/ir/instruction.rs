@@ -53,10 +53,9 @@ pub fn write_asm_file(instructions: &[IRInstruction], filename: &str) -> std::io
         }
     }
 
-    // Write section headers
     writeln!(file, "section .data")?;
-    writeln!(file, "msg db 'Result: ', 0")?; // Message prefix
-    writeln!(file, "buffer db 20 dup(0)")?; // Buffer for integer to string conversion
+    writeln!(file, "msg db 'Result: ', 0")?; 
+    writeln!(file, "buffer db 20 dup(0)")?; 
 
     for (var_name, asm_name) in &variables {
         writeln!(file, "{} dq 0", asm_name)?;
@@ -73,9 +72,9 @@ pub fn write_asm_file(instructions: &[IRInstruction], filename: &str) -> std::io
                 let src_op = convert_to_register_or_memory(src, &variables);
                 
                 if src.parse::<i64>().is_ok() {
-                    format!("mov {}, {}\n", dest_op, src_op) // Move immediate value to register/memory
+                    format!("mov {}, {}\n", dest_op, src_op) 
                 } else {
-                    format!("mov {}, qword {}\n", dest_op, src_op) // Move register/memory to register/memory
+                    format!("mov {}, qword {}\n", dest_op, src_op) 
                 }
             },
             IRInstruction::Add { dest, src } => {
@@ -111,31 +110,6 @@ pub fn write_asm_file(instructions: &[IRInstruction], filename: &str) -> std::io
         };
         file.write_all(asm_line.as_bytes())?;
     }
-
-    // Write exit system call
-    writeln!(file, "mov rax, 60")?; // System call number for sys_exit
-    writeln!(file, "xor rdi, rdi")?; // Exit code 0
-    writeln!(file, "syscall")?;
-
-    // Define print_integer function
-    writeln!(file, "print_integer:")?;
-    writeln!(file, "    mov rbx, 10")?; // Divisor for division by 10
-    writeln!(file, "    xor rdx, rdx")?; // Clear rdx for division
-    writeln!(file, "    mov rdi, buffer + 19")?; // Point to the end of the buffer
-    writeln!(file, "    mov byte [rdi], 0")?; // Null-terminate the string
-
-    writeln!(file, "convert_loop:")?;
-    writeln!(file, "    dec rdi")?; // Move buffer pointer backwards
-    writeln!(file, "    div rbx")?; // Divide rax by 10
-    writeln!(file, "    add dl, '0'")?; // Convert remainder to ASCII
-    writeln!(file, "    mov [rdi], dl")?; // Store ASCII character
-    writeln!(file, "    test rax, rax")?; // Check if quotient is zero
-    writeln!(file, "    jnz convert_loop")?; // If not zero, convert next digit
-
-    writeln!(file, "    mov rsi, rdi")?; // Set rsi to start of the string
-    writeln!(file, "    mov rdx, buffer + 19 - rdi")?; // Set rdx to the length of the string
-    writeln!(file, "    ret")?;
-
     Ok(())
 }
 

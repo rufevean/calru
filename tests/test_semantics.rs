@@ -99,7 +99,6 @@ mod tests {
 
         let mut parser = Parser::new(tokens);
 
-        // Missing termination ';'
         let err = parser.parse_statement(&mut SymbolTable::new()).err().unwrap();
         assert_eq!(err, "Expected ';' at position Position { line: 1, column: 5 }. Found None");
     }

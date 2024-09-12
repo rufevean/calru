@@ -6,7 +6,7 @@ use crate::errors;
 use crate::symbol_table::SymbolTable;
 use crate::ir::generator::generate_ir;
 use std::io::{self, Write};
-use crate::ast::AST;  // Import the AST type to match the expected type in generate_ir
+use crate::ast::AST;  
 
 pub fn interactive_lexer() {
     println!("Welcome to Calru. Enter your code and press Enter:");

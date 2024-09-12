@@ -25,7 +25,7 @@ impl Parser {
         parser
     }
 
-    pub fn parse_program(&mut self) -> Result<Vec<AST>, String> {
+    pub fn parse_program(&mut self) -> Result<(Vec<AST>, SymbolTable), String> {
         let mut asts = Vec::new();
 
         while let Some(ref token) = self.current_token {
@@ -34,11 +34,11 @@ impl Parser {
             }
             
             let ast = self.parse_statement()?;
-            self.symbol_table.print(); // Print symbol table after each statement
+            self.symbol_table.print(); 
             asts.push(ast);
         }
 
-        Ok(asts)
+        Ok((asts, self.symbol_table.clone()))
     }
 
     pub fn parse_statement(&mut self) -> Result<AST, String> {
@@ -59,8 +59,7 @@ impl Parser {
             return Err(format!("Expected 'let' at position {:?}. Found {:?}", self.position, self.current_token));
         }
 
-        self.advance(); // Move past 'let'
-
+        self.advance(); 
         if !self.current_token_is(TokenType::Identifier) {
             return Err(format!("Expected identifier at position {:?}. Found {:?}", self.position, self.current_token));
         }
@@ -73,7 +72,7 @@ impl Parser {
             ));
         }
 
-        self.advance(); // Move past identifier
+        self.advance(); 
 
         let symbol_type = if self.current_token_is(TokenType::IntType) {
             SymbolType::Int
@@ -85,8 +84,7 @@ impl Parser {
                 self.position, self.current_token
             ));
         };
-        self.advance(); // Move past type
-
+        self.advance(); 
         let expression = self.parse_assign_expr()?;
 
         let expr_type = self.infer_type(&expression)?;
@@ -99,7 +97,6 @@ impl Parser {
 
         let value = self.evaluate_expression(&expression)?;
 
-        // Store the variable and its value in the symbol table
         self.symbol_table.insert(variable.clone(), symbol_type, value)
             .map_err(|e| format!("Error inserting symbol into symbol table: {}", e))?;
 
@@ -226,28 +223,24 @@ impl Parser {
             return Err(format!("Expected 'stdout' at position {:?}. Found {:?}", self.position, self.current_token));
         }
 
-        self.advance(); // Move past 'stdout'
-
+        self.advance(); 
         if !self.current_token_is(TokenType::LeftParen) || self.current_token.as_ref().unwrap().value != "(" {
             return Err(format!("Expected '(' after 'stdout' at position {:?}. Found {:?}", self.position, self.current_token));
         }
 
-        self.advance(); // Move past '('
-
+        self.advance(); 
         let expression = self.parse_expression()?;
 
         if !self.current_token_is(TokenType::RightParen) || self.current_token.as_ref().unwrap().value != ")" {
             return Err(format!("Expected ')' after expression at position {:?}. Found {:?}", self.position, self.current_token));
         }
 
-        self.advance(); // Move past ')'
-
+        self.advance();
         if !self.current_token_is(TokenType::Termination) {
             return Err(format!("Expected ';' at position {:?}. Found {:?}", self.position, self.current_token));
         }
 
-        self.advance(); // Move past ';'
-
+        self.advance(); 
         Ok(AST::new(ASTNode::Print(Box::new(expression))))
     }
 
