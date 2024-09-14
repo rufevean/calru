@@ -37,7 +37,7 @@ mod tests {
             expression: Box::new(AST::new(ASTNode::Int(1))),
         });
 
-        match parser.parse_statement(&mut SymbolTable::new()) {
+        match parser.parse_statement() {
             Ok(ast) => assert_eq!(ast, expected_ast),
             Err(e) => panic!("Parsing failed: {}", e),
         }
@@ -63,9 +63,9 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let mut symbol_table = SymbolTable::new();
 
-        parser.parse_statement(&mut symbol_table).unwrap();
+        parser.parse_statement().unwrap();
 
-        let err = parser.parse_statement(&mut symbol_table).err().unwrap();
+        let err = parser.parse_statement().err().unwrap();
         assert_eq!(err, "Variable 'variable1' already declared at position Position { line: 1, column: 8 }.");
     }
 
@@ -83,7 +83,7 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let mut symbol_table = SymbolTable::new();
 
-        let err = parser.parse_statement(&mut symbol_table).err().unwrap();
+        let err = parser.parse_statement().err().unwrap();
         assert_eq!(err, "Type mismatch: cannot assign expression of type Float to variable of type Int at position Position { line: 1, column: 6 }.");
     }
 
@@ -99,7 +99,7 @@ mod tests {
 
         let mut parser = Parser::new(tokens);
 
-        let err = parser.parse_statement(&mut SymbolTable::new()).err().unwrap();
+        let err = parser.parse_statement().err().unwrap();
         assert_eq!(err, "Expected ';' at position Position { line: 1, column: 5 }. Found None");
     }
 
@@ -127,7 +127,7 @@ mod tests {
             })),
         });
 
-        match parser.parse_statement(&mut SymbolTable::new()) {
+        match parser.parse_statement() {
             Ok(ast) => assert_eq!(ast, expected_ast),
             Err(e) => panic!("Parsing failed: {}", e),
         }

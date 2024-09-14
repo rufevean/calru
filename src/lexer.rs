@@ -32,7 +32,7 @@ pub fn lexer(input: &str) -> Vec<Token> {
                         column += 1;
                     } else if digit == '.' {
                         if has_dot {
-                            break; 
+                            break;
                         }
                         has_dot = true;
                         num.push(chars.next().unwrap());
@@ -67,6 +67,11 @@ pub fn lexer(input: &str) -> Vec<Token> {
                 let token_type = match ident.as_str() {
                     "let" => TokenType::Let,
                     "stdout" => TokenType::Print,
+                    "if" => TokenType::If,
+                    "then" => TokenType::Then,
+                    "else" => TokenType::Else,
+                    "end" => TokenType::End,
+                    "true" | "false" => TokenType::Boolean, // Handle boolean literals
                     _ => TokenType::Identifier,
                 };
                 Token {

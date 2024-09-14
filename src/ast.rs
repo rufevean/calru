@@ -5,6 +5,7 @@ use std::fmt;
 pub enum ASTNode {
     Int(i64),
     Float(f64),
+    Boolean(bool),
     Identifier(String),
     BinaryOperation {
         operator: String,
@@ -16,6 +17,11 @@ pub enum ASTNode {
         expression: Box<AST>,
     },
     Print(Box<AST>),
+    If {
+        condition: Box<AST>,
+        then_branch: Box<AST>,
+        else_branch: Option<Box<AST>>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -35,14 +41,12 @@ impl fmt::Display for AST {
     }
 }
 
-
-
-
 impl fmt::Display for ASTNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ASTNode::Int(n) => write!(f, "Int({})", n),
             ASTNode::Float(n) => write!(f, "Float({})", n),
+            ASTNode::Boolean(b) => write!(f, "Boolean({})", b),
             ASTNode::Identifier(id) => write!(f, "Identifier({})", id),
             ASTNode::BinaryOperation { operator, left, right } => {
                 write!(f, "BinaryOperation({} {} {})", left, operator, right)
@@ -52,6 +56,10 @@ impl fmt::Display for ASTNode {
             }
             ASTNode::Print(expression) => {
                 write!(f, "Print({})", expression)
+            }
+            ASTNode::If { condition, then_branch, else_branch } => {
+                write!(f, "If({} then {} else {})", condition, then_branch, 
+                    if let Some(else_branch) = else_branch { else_branch.to_string() } else { "None".to_string() })
             }
         }
     }

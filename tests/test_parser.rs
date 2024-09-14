@@ -20,7 +20,7 @@ fn test_let_decl() {
     let mut symbol_table = SymbolTable::new(); // Initialize the symbol table
     let mut parser = Parser::new(tokens);
 
-    let ast = parser.parse_statement(&mut symbol_table).expect("Failed to parse statement");
+    let ast = parser.parse_statement().expect("Failed to parse statement");
 
     let expected_ast = AST::new(ASTNode::Assignment {
         variable: "x".to_string(),
@@ -125,7 +125,7 @@ fn test_missing_variable() {
     let mut parser = Parser::new(tokens);
     let mut symbol_table = SymbolTable::new(); // Initialize symbol table
 
-    let result = parser.parse_statement(&mut symbol_table);
+    let result = parser.parse_statement();
 
     assert!(result.is_err());
     assert_eq!(
@@ -144,11 +144,11 @@ fn test_unexpected_token() {
     let mut parser = Parser::new(tokens);
     let mut symbol_table = SymbolTable::new(); // Initialize symbol table
 
-    let result = parser.parse_statement(&mut symbol_table);
+    let result = parser.parse_statement();
 
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
-        "Unexpected token Some(Token { token_type: Number, value: \"42\", position: Position { line: 1, column: 1 } }) at position Position { line: 1, column: 1 }. Expected 'let' to start a declaration."
+        "Unexpected token Some(Token { token_type: Number, value: \"42\", position: Position { line: 1, column: 1 } }) at position Position { line: 1, column: 1 }. Expected 'let' or 'stdout'."
     );
 }

@@ -1,3 +1,4 @@
+
 #[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
@@ -5,11 +6,12 @@ pub struct Token {
     pub position: Position,
 }
 
-#[derive(Debug,PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenType {
     Identifier,
     Number,
     FloatNumber,
+    Boolean, // Add boolean token type
     Let,
     Operator,
     Assign,
@@ -22,9 +24,15 @@ pub enum TokenType {
     // Data types
     IntType,
     FloatType,
+    BoolType, // Add boolean type
+    // If statement
+    If,
+    Then,
+    Else,
+    End,
 }
 
-#[derive(Debug, Clone, Copy,PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Position {
     pub line: usize,
     pub column: usize,

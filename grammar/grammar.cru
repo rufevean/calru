@@ -1,23 +1,30 @@
 
-// Top-level statements
+Top-level statements
 Statement   → LetDecl
             | PrintStmt
+            | IfStmt
 
-// Declaration of variables
+Declaration of variables
 LetDecl     → 'let' Identifier ':' Type AssignExpr ';'
 
-// Expression assignment
+Expression assignment
 AssignExpr  → ':=' Expression
 
-// Print statement
+Print statement
 PrintStmt   → 'stdout' '(' Expression ')'
 
-// Expressions and terms
+If statement
+IfStmt      → 'if' Condition 'then' Statement ('else' Statement)? 'end' ';'
+
+Conditions
+Condition   → Expression ('<' | '>' | '==' | '!=') Expression
+
+Expressions and terms
 Expression  → Term (('+' | '-') Term)*
+
 Term        → Factor (('*' | '/') Factor)*
 
-// Factors and operands
+Factors and operands
 Factor      → Number
             | Identifier
             | '(' Expression ')'
-ion).
