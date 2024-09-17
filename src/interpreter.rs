@@ -8,11 +8,9 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
-pub fn new(symbol_table: SymbolTable) -> Self {
-    Interpreter {
-        symbol_table,
+    pub fn new(symbol_table: SymbolTable) -> Self {
+        Interpreter { symbol_table }
     }
-}
 
     pub fn run(&mut self, statements: Vec<AST>) -> Result<(), String> {
         for statement in statements {
@@ -43,6 +41,20 @@ pub fn new(symbol_table: SymbolTable) -> Self {
                 let value = self.evaluate_expression(expression)?;
                 println!("{:?}", value); // Use `{:?}` for debug output
             },
+            ASTNode::Boolean(b) => {
+                // Handle Boolean nodes if needed
+                println!("Boolean value: {}", b);
+            },
+            ASTNode::If { condition, then_branch, else_branch } => {
+                // Handle If statements (needs further implementation for actual branching logic)
+                let condition_value = self.evaluate_expression(condition)?;
+                // For simplicity, assuming `condition_value` is a boolean here.
+                if let SymbolValue::Boolean(true) = condition_value {
+                    self.execute_statement(then_branch)?;
+                } else if let Some(else_branch) = else_branch {
+                    self.execute_statement(else_branch)?;
+                }
+            },
             _ => return Err(format!("Unsupported statement {:?}", ast.node)),
         }
         Ok(())
@@ -52,6 +64,7 @@ pub fn new(symbol_table: SymbolTable) -> Self {
         match &expression.node {
             ASTNode::Int(value) => Ok(SymbolValue::Int(*value)),
             ASTNode::Float(value) => Ok(SymbolValue::Float(*value)),
+            ASTNode::Boolean(value) => Ok(SymbolValue::Boolean(*value)),
             ASTNode::Identifier(id) => {
                 let symbol = self.symbol_table.lookup(id)
                     .ok_or_else(|| format!("Variable '{}' not found.", id))?;
@@ -102,6 +115,9 @@ pub fn new(symbol_table: SymbolTable) -> Self {
                         };
                         Ok(SymbolValue::Float(result))
                     },
+                    (SymbolValue::Boolean(_), _) | (_, SymbolValue::Boolean(_)) => {
+                        Err("Boolean values cannot be used in arithmetic operations.".to_string())
+                    },
                 }
             },
             _ => Err(format!("Cannot evaluate expression node {:?}", expression.node)),
@@ -112,6 +128,7 @@ pub fn new(symbol_table: SymbolTable) -> Self {
         match &node.node {
             ASTNode::Int(_) => Ok(SymbolType::Int),
             ASTNode::Float(_) => Ok(SymbolType::Float),
+            ASTNode::Boolean(_) => Ok(SymbolType::Boolean),
             ASTNode::Identifier(id) => {
                 self.symbol_table.lookup(id)
                     .map(|symbol| symbol.symbol_type.clone())
@@ -131,6 +148,26 @@ pub fn new(symbol_table: SymbolTable) -> Self {
             },
             ASTNode::Assignment { expression, .. } => self.infer_type(expression),
             ASTNode::Print(expression) => self.infer_type(expression),
+            ASTNode::If { condition, then_branch, else_branch } => {
+                let condition_type = self.infer_type(condition)?;
+                let then_type = self.infer_type(then_branch)?;
+                let else_type = if let Some(else_branch) = else_branch {
+                    self.infer_type(else_branch)?
+                } else {
+                    then_type.clone() // Default to the `then_branch` type if `else_branch` is None
+                };
+
+                if condition_type != SymbolType::Boolean {
+                    Err(format!("Condition in 'If' statement must be of type Boolean."))
+                } else if then_type == else_type {
+                    Ok(then_type)
+                } else {
+                    Err(format!(
+                        "Type mismatch in 'If' statement branches. Then branch type: {:?}, Else branch type: {:?}.",
+                        then_type, else_type
+                    ))
+                }
+            }
         }
     }
 }
@@ -140,6 +177,7 @@ impl fmt::Display for SymbolValue {
         match self {
             SymbolValue::Int(value) => write!(f, "{}", value),
             SymbolValue::Float(value) => write!(f, "{}", value),
+            SymbolValue::Boolean(value) => write!(f, "{}", value), // Add this line
         }
     }
 }

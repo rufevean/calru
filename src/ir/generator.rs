@@ -39,5 +39,8 @@ fn generate_ir_node(node: &AST, instructions: &mut Vec<IRInstruction>) {
             generate_ir_node(operand, instructions);
             instructions.push(IRInstruction::Print { operand: "R0".to_string() });
         }
+        _ => {
+            println!("Unsupported AST node: {:?}", node.node); 
+        }
     }
 }

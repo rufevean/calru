@@ -5,12 +5,14 @@ use std::collections::HashMap;
 pub enum SymbolType {
     Int,
     Float,
+    Boolean,
 }
 
 #[derive(Debug, Clone)]
 pub enum SymbolValue {
     Int(i64),
     Float(f64),
+    Boolean(bool),
 }
 
 #[derive(Debug, Clone)]
@@ -50,6 +52,7 @@ impl SymbolTable {
             let value_str = match &symbol.value {
                 SymbolValue::Int(v) => v.to_string(),
                 SymbolValue::Float(v) => v.to_string(),
+                SymbolValue::Boolean(v) => v.to_string(),
             };
             println!("{}: {:?} = {}", name, symbol.symbol_type, value_str);
         }

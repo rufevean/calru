@@ -30,8 +30,14 @@ pub enum TokenType {
     Then,
     Else,
     End,
+    // Comparison operators
+    GreaterThan,
+    GreaterThanOrEqual,
+    LessThan,
+    LessThanOrEqual,
+    Equal,
+    NotEqual,
 }
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Position {
     pub line: usize,

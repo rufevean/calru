@@ -42,15 +42,15 @@ pub fn lexer(input: &str) -> Vec<Token> {
                     }
                 }
 
-                Token {
-                    token_type: if has_dot {
+                Token::new(
+                    if has_dot {
                         TokenType::FloatNumber
                     } else {
                         TokenType::Number
                     },
-                    value: num,
-                    position: Position { line, column: start_column },
-                }
+                    num,
+                    Position { line, column: start_column },
+                )
             }
 
             'a'..='z' | 'A'..='Z' | '_' => {
@@ -74,11 +74,11 @@ pub fn lexer(input: &str) -> Vec<Token> {
                     "true" | "false" => TokenType::Boolean, // Handle boolean literals
                     _ => TokenType::Identifier,
                 };
-                Token {
+                Token::new(
                     token_type,
-                    value: ident,
-                    position: Position { line, column: start_column },
-                }
+                    ident,
+                    Position { line, column: start_column },
+                )
             }
 
             ':' => {
@@ -86,110 +86,175 @@ pub fn lexer(input: &str) -> Vec<Token> {
                 chars.next();
                 if chars.peek() == Some(&'=') {
                     chars.next(); 
-                    token = Token {
-                        token_type: TokenType::Assign,
-                        value: ":=".to_string(),
-                        position: Position { line, column },
-                    };
+                    token = Token::new(
+                        TokenType::Assign,
+                        ":=".to_string(),
+                        Position { line, column },
+                    );
                     column += 2;
                 } else {
-                    let next_word: String = chars.clone().take(5).collect();
-                    if next_word.starts_with("int") {
-                        chars.by_ref().take(3).for_each(|_| column += 1);
-                        token = Token {
-                            token_type: TokenType::IntType,
-                            value: "int".to_string(),
-                            position: Position { line, column },
-                        };
-                    } else if next_word.starts_with("float") {
-                        chars.by_ref().take(5).for_each(|_| column += 1);
-                        token = Token {
-                            token_type: TokenType::FloatType,
-                            value: "float".to_string(),
-                            position: Position { line, column },
-                        };
-                    } else {
-                        token = Token {
-                            token_type: TokenType::Operator,
-                            value: ":".to_string(),
-                            position: Position { line, column },
-                        };
-                        column += 1;
+                    // Type declaration (e.g., ":float")
+                    let start_column = column;
+                    let mut type_str = String::new();
+                    while let Some(&ch) = chars.peek() {
+                        if ch.is_alphabetic() {
+                            type_str.push(chars.next().unwrap());
+                            column += 1;
+                        } else {
+                            break;
+                        }
                     }
+                    let token_type = match type_str.as_str() {
+                        "int" => TokenType::IntType,
+                        "float" => TokenType::FloatType,
+                        "bool" => TokenType::BoolType,
+                        _ => TokenType::Unknown,
+                    };
+                    token = Token::new(
+                        token_type,
+                        type_str,
+                        Position { line, column: start_column },
+                    );
                 }
                 token
             }
 
-            '/' => {
-                if chars.peek() == Some(&'/') {
-                    chars.next(); // Consume the '/'
-                    while let Some(&next_ch) = chars.peek() {
-                        if next_ch == '\n' {
-                            break;
-                        }
-                        chars.next();
-                    }
-                    column = if let Some(&'\n') = chars.peek() { column + 1 } else { column };
-                    continue;
-                } else {
-                    Token {
-                        token_type: TokenType::Operator,
-                        value: ch.to_string(),
-                        position: Position { line, column },
-                    }
-                }
-            }
-
             '+' | '-' | '*' | '/' => {
-                let token = Token {
-                    token_type: TokenType::Operator,
-                    value: ch.to_string(),
-                    position: Position { line, column },
-                };
+                let token = Token::new(
+                    TokenType::Operator,
+                    ch.to_string(),
+                    Position { line, column },
+                );
                 chars.next();
                 column += 1;
                 token
             }
 
             '(' => {
-                let token = Token {
-                    token_type: TokenType::LeftParen,
-                    value: ch.to_string(),
-                    position: Position { line, column },
-                };
+                let token = Token::new(
+                    TokenType::LeftParen,
+                    ch.to_string(),
+                    Position { line, column },
+                );
                 chars.next();
                 column += 1;
                 token
             }
 
             ')' => {
-                let token = Token {
-                    token_type: TokenType::RightParen,
-                    value: ch.to_string(),
-                    position: Position { line, column },
-                };
+                let token = Token::new(
+                    TokenType::RightParen,
+                    ch.to_string(),
+                    Position { line, column },
+                );
                 chars.next();
                 column += 1;
                 token
             }
 
             ';' => {
-                let token = Token {
-                    token_type: TokenType::Termination,
-                    value: ch.to_string(),
-                    position: Position { line, column },
-                };
+                let token = Token::new(
+                    TokenType::Termination,
+                    ch.to_string(),
+                    Position { line, column },
+                );
                 chars.next();
                 column += 1;
                 token
             }
 
-            _ => {
-                let token = Token {
-                    token_type: TokenType::Unknown,
-                    value: ch.to_string(),
-                    position: Position { line, column },
+            '>' => {
+                let start_column = column;
+                chars.next();
+                column += 1;
+                let token = if chars.peek() == Some(&'=') {
+                    chars.next();
+                    column += 1;
+                    Token::new(
+                        TokenType::GreaterThanOrEqual,
+                        ">=".to_string(),
+                        Position { line, column: start_column },
+                    )
+                } else {
+                    Token::new(
+                        TokenType::GreaterThan,
+                        ">".to_string(),
+                        Position { line, column: start_column },
+                    )
                 };
+                token
+            }
+
+            '<' => {
+                let start_column = column;
+                chars.next();
+                column += 1;
+                let token = if chars.peek() == Some(&'=') {
+                    chars.next();
+                    column += 1;
+                    Token::new(
+                        TokenType::LessThanOrEqual,
+                        "<=".to_string(),
+                        Position { line, column: start_column },
+                    )
+                } else {
+                    Token::new(
+                        TokenType::LessThan,
+                        "<".to_string(),
+                        Position { line, column: start_column },
+                    )
+                };
+                token
+            }
+
+            '=' => {
+                let start_column = column;
+                chars.next();
+                column += 1;
+                if chars.peek() == Some(&'=') {
+                    chars.next();
+                    column += 1;
+                    Token::new(
+                        TokenType::Equal,
+                        "==".to_string(),
+                        Position { line, column: start_column },
+                    )
+                } else {
+                    Token::new(
+                        TokenType::Operator,
+                        "=".to_string(),
+                        Position { line, column: start_column },
+                    )
+                }
+            }
+
+            '!' => {
+                let start_column = column;
+                chars.next();
+                column += 1;
+                if chars.peek() == Some(&'=') {
+                    chars.next();
+                    column += 1;
+                    Token::new(
+                        TokenType::NotEqual,
+                        "!=".to_string(),
+                        Position { line, column: start_column },
+                    )
+                } else {
+                    Token::new(
+                        TokenType::Operator,
+                        "!".to_string(),
+                        Position { line, column: start_column },
+                    )
+                }
+            }
+
+            _ => {
+                let token = Token::new(
+                    TokenType::Unknown,
+                    ch.to_string(),
+                    Position { line, column },
+                );
                 chars.next();
                 column += 1;
                 token
@@ -197,11 +262,11 @@ pub fn lexer(input: &str) -> Vec<Token> {
         };
         tokens.push(token);
     }
-    tokens.push(Token {
-        token_type: TokenType::EOF,
-        value: "".to_string(),
-        position: Position { line, column },
-    });
+    tokens.push(Token::new(
+        TokenType::EOF,
+        "".to_string(),
+        Position { line, column },
+    ));
 
     tokens
 }
