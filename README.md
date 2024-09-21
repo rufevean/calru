@@ -15,27 +15,36 @@ Calru is a compiler that parses and interprets a custom language designed to sup
 
 The current grammar for the Calru language is as follows:
 ```
-// Top-level statements
+Top-level statements
 Statement   → LetDecl
             | PrintStmt
+            | IfStmt
 
-// Declaration of variables
+Declaration of variables
 LetDecl     → 'let' Identifier ':' Type AssignExpr ';'
 
-// Expression assignment
+Expression assignment
 AssignExpr  → ':=' Expression
 
-// Print statement
+Print statement
 PrintStmt   → 'stdout' '(' Expression ')'
 
-// Expressions and terms
+If statement
+IfStmt      → 'if' Condition 'then' Statement ('else' Statement)? 'end' ';'
+
+Conditions
+Condition   → Expression ('<' | '>' | '==' | '!=') Expression
+
+Expressions and terms
 Expression  → Term (('+' | '-') Term)*
 
 Term        → Factor (('*' | '/') Factor)*
 
-// Factors and operands
+Factors and operands
 Factor      → Number
             | Identifier
+            | '(' Expression ')'
+
  ```
 
 ## Language Features
@@ -43,6 +52,7 @@ Factor      → Number
 -   **Types**: Only floating-point numbers are supported. Integer types are considered as floats for simplicity.
 -   **Operations**: Basic arithmetic operations (`+`, `-`, `*`, `/`).
 -   **Statements**: Variable declarations with type, assignments, and print statements.
+-   **Control Flow**: Basic `if` statements with conditions.
 -   **Error Handling**: Comprehensive error reporting for syntax and semantic issues.
 
 ## Usage
@@ -67,25 +77,35 @@ cargo test
 ```
 ## Example
 ```
-let v1:int := 12;
-let v2:float := 13.5;
-let result:float := v1 + v2;
-stdout(result);
+let num1 :float := 2.5;
+let num2 :float := 4.0;
+let num3 :float := 3.0;
+let num4 :float := 1.5;
+let product :float := num1 * num2 * num3 * num4;
+stdout(product);
+
+if (product < 10.0) then
+    stdout(10);
+else 
+    stdout(1);
+end;
 ```
 ### Explanation
 
--   `let v1:int := 12;` declares an integer variable `v1` with a value of `12`.
--   `let v2:float := 13.5;` declares a floating-point variable `v2` with a value of `13.5`.
--   `let result:float := v1 + v2;` declares a floating-point variable `result` and assigns it the sum of `v1` and `v2`.
--   `stdout(result);` prints the value of `result` to the standard output.
+-  The code declares four floating-point variables `num1`, `num2`, `num3`, and `num4`.
+-  The product of these variables is calculated and stored in the `product` variable.
+-  The product is printed to the console.
+-  An `if` statement checks if the product is less than `10.0`.
+-  If the condition is true, `10` is printed; otherwise, `1` is printed.
+
 
 
 ## Future Plans
 
 -   **Add CLI Options**: Separate lexer, parser, and other components with command-line options.
 -   **Implement Parentheses**: Support for parentheses in expressions.
--   **Add Control Flow**: Introduce `if` statements and boolean values.
 -   **Expand Language Features**: Include trigonometric functions and other advanced math features.
+-   **perform more tests**: Add more tests to ensure the correctness of the compiler.
 			
 ## Contributing
 Contributions are welcome! Please open an issue or submit a pull request if you'd like to contribute to the development of Calru.

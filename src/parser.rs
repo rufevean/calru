@@ -42,65 +42,75 @@ impl Parser {
     }
 
     pub fn parse_statement(&mut self) -> Result<AST, String> {
-        if self.current_token_is(TokenType::Let) {
-            self.parse_let_decl()
-        } else if self.current_token_is(TokenType::Print) {
-            self.parse_print()
-        } else if self.current_token_is(TokenType::If) {
-            self.parse_if_statement()
-        } else {
-            Err(format!(
+        match self.current_token {
+            Some(ref token) if token.token_type == TokenType::Let => self.parse_let_decl(),
+            Some(ref token) if token.token_type == TokenType::Print => self.parse_print(),
+            Some(ref token) if token.token_type == TokenType::If => self.parse_if_statement(),
+            _ => Err(format!(
                 "Unexpected token {:?} at position {:?}. Expected 'let', 'stdout', or 'if'.",
                 self.current_token, self.position
-            ))
+            )),
         }
     }
 
-    // New method to parse if statements
-
-
-pub fn parse_if_statement(&mut self) -> Result<AST, String> {
-    if !self.current_token_is(TokenType::If) {
-        return Err(format!("Expected 'if' at position {:?}. Found {:?}", self.position, self.current_token));
+    pub fn parse_if_statement(&mut self) -> Result<AST, String> {
+        if !self.current_token_is(TokenType::If) {
+            return Err(format!("Expected 'if' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance();
+    
+        if !self.current_token_is(TokenType::LeftParen) {
+            return Err(format!("Expected '(' after 'if' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); 
+    
+        let condition = self.parse_expression()?;
+    
+        if !self.current_token_is(TokenType::RightParen) {
+            return Err(format!("Expected ')' after condition at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); 
+    
+        if !matches!(self.infer_type(&condition)?, SymbolType::Boolean) {
+            return Err(format!("Expected boolean condition at position {:?}. Found {:?}", self.position, condition));
+        }
+    
+        if !self.current_token_is(TokenType::Then) {
+            return Err(format!("Expected 'then' after 'if' condition at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); 
+    
+        let then_branch = self.parse_statement()?;
+    
+        let mut else_branch = None;
+        if self.current_token_is(TokenType::Else) {
+            self.advance();
+            else_branch = Some(self.parse_statement()?);
+        }
+    
+        if !self.current_token_is(TokenType::End) {
+            return Err(format!("Expected 'end' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); 
+    
+        if self.current_token_is(TokenType::Termination) {
+            self.advance(); 
+        }
+    
+        Ok(AST::new(ASTNode::If {
+            condition: Box::new(condition),
+            then_branch: Box::new(then_branch),
+            else_branch: else_branch.map(Box::new),
+        }))
     }
+ 
 
-    self.advance(); // Consume 'if'
 
-    let condition = self.parse_expression()?;
-
-    // Ensure that condition is a boolean expression or involves boolean comparison
-    if !matches!(self.infer_type(&condition)?, SymbolType::Boolean) {
-        return Err(format!("Expected boolean condition at position {:?}. Found {:?}", self.position, condition));
-    }
-
-    self.advance(); // Move to the next token after parsing the condition
-
-    if !self.current_token_is(TokenType::Then) {
-        return Err(format!("Expected 'then' after 'if' condition at position {:?}. Found {:?}", self.position, self.current_token));
-    }
-
-    self.advance(); // Consume 'then'
-
-    let then_branch = self.parse_statement()?;
-
-    let mut else_branch = None;
-    if self.current_token_is(TokenType::Else) {
-        self.advance(); // Consume 'else'
-        else_branch = Some(self.parse_statement()?);
-    }
-
-    if !self.current_token_is(TokenType::End) {
-        return Err(format!("Expected 'end' at position {:?}. Found {:?}", self.position, self.current_token));
-    }
-
-    self.advance(); // Consume 'end'
-
-    Ok(AST::new(ASTNode::If {
-        condition: Box::new(condition),
-        then_branch: Box::new(then_branch),
-        else_branch: else_branch.map(Box::new),
-    }))
-}
     pub fn parse_let_decl(&mut self) -> Result<AST, String> {
         if !self.current_token_is(TokenType::Let) {
             return Err(format!("Expected 'let' at position {:?}. Found {:?}", self.position, self.current_token));
@@ -153,54 +163,63 @@ pub fn parse_if_statement(&mut self) -> Result<AST, String> {
         }))
     }
 
+    pub fn parse_expression(&mut self) -> Result<AST, String> {
+        let mut left = self.parse_term()?;
+        let mut left_type = self.infer_type(&left)?;
+    
+        while self.current_token_is(TokenType::Operator)
+            || self.current_token_is(TokenType::LessThan)
+            || self.current_token_is(TokenType::GreaterThan)
+            || self.current_token_is(TokenType::Equal)
+            || self.current_token_is(TokenType::NotEqual)
+            || self.current_token_is(TokenType::And)
+            || self.current_token_is(TokenType::Or)
+        {
+            let operator = self.current_token.as_ref().unwrap().value.clone();
+            self.advance();
+    
+            let right = self.parse_term()?;
+            let right_type = self.infer_type(&right)?;
+    
 
-
-
-pub fn parse_expression(&mut self) -> Result<AST, String> {
-    let mut left = self.parse_term()?;
-    let mut left_type = self.infer_type(&left)?;
-
-    while self.current_token_is(TokenType::Operator)
-        && (self.current_token.as_ref().unwrap().value == "+"
-            || self.current_token.as_ref().unwrap().value == "-"
-            || self.current_token.as_ref().unwrap().value == "=="
-            || self.current_token.as_ref().unwrap().value == "!="
-            || self.current_token.as_ref().unwrap().value == "&&"
-            || self.current_token.as_ref().unwrap().value == "||")
-    {
-        let operator = self.current_token.as_ref().unwrap().value.clone();
-        self.advance();
-
-        let right = self.parse_term()?;
-        let right_type = self.infer_type(&right)?;
-
-        // Check for type compatibility based on the operator
-        if (operator == "==" || operator == "!=") && (left_type == SymbolType::Int || left_type == SymbolType::Float) {
-            left_type = SymbolType::Boolean;
-        } else if (operator == "&&" || operator == "||") && left_type == SymbolType::Boolean {
-            left_type = SymbolType::Boolean;
-        } else if left_type != right_type {
-            return Err(format!(
-                "Type mismatch: cannot perform '{}' operation between {:?} and {:?} at position {:?}.",
-                operator, left_type, right_type, self.position
-            ));
+            if (operator == "==" || operator == "!=" || operator == ">" || operator == "<" || operator == ">=" || operator == "<=") {
+                if left_type != right_type {
+                    return Err(format!(
+                        "Type mismatch: cannot perform '{}' operation between {:?} and {:?} at position {:?}.",
+                        operator, left_type, right_type, self.position
+                    ));
+                }
+                left_type = SymbolType::Boolean;
+            } else if (operator == "&&" || operator == "||") {
+                if left_type != SymbolType::Boolean || right_type != SymbolType::Boolean {
+                    return Err(format!(
+                        "Type mismatch: cannot perform '{}' operation between {:?} and {:?} at position {:?}.",
+                        operator, left_type, right_type, self.position
+                    ));
+                }
+                left_type = SymbolType::Boolean;
+            } else if left_type != right_type {
+                return Err(format!(
+                    "Type mismatch: cannot perform '{}' operation between {:?} and {:?} at position {:?}.",
+                    operator, left_type, right_type, self.position
+                ));
+            }
+    
+            left = AST::new(ASTNode::BinaryOperation {
+                operator,
+                left: Box::new(left),
+                right: Box::new(right),
+            });
+    
+            left_type = self.infer_type(&left)?;
         }
-
-        left = AST::new(ASTNode::BinaryOperation {
-            operator,
-            left: Box::new(left),
-            right: Box::new(right),
-        });
-
-        left_type = right_type;
+    
+        Ok(left)
     }
-
-    Ok(left)
-}
     pub fn parse_term(&mut self) -> Result<AST, String> {
         let mut left = self.parse_factor()?;
         let mut left_type = self.infer_type(&left)?;
-
+    
         while self.current_token_is(TokenType::Operator)
             && (self.current_token.as_ref().unwrap().value == "*"
                 || self.current_token.as_ref().unwrap().value == "/")
@@ -209,14 +228,14 @@ pub fn parse_expression(&mut self) -> Result<AST, String> {
             self.advance();
             let right = self.parse_factor()?;
             let right_type = self.infer_type(&right)?;
-
+    
             if left_type != right_type {
                 return Err(format!(
                     "Type mismatch: cannot perform '{}' operation between {:?} and {:?} at position {:?}.",
                     operator, left_type, right_type, self.position
                 ));
             }
-
+    
             left = AST::new(ASTNode::BinaryOperation {
                 operator,
                 left: Box::new(left),
@@ -224,42 +243,50 @@ pub fn parse_expression(&mut self) -> Result<AST, String> {
             });
             left_type = left_type;
         }
-
+    
         Ok(left)
     }
-
  
 
-pub fn parse_factor(&mut self) -> Result<AST, String> {
-    match self.current_token {
-        Some(ref token) if token.token_type == TokenType::Number => {
-            let value = token.value.parse::<i64>()
-                .map_err(|_| format!("Invalid integer format at position {:?}.", self.position))?;
-            self.advance();
-            Ok(AST::new(ASTNode::Int(value)))
-        },
-        Some(ref token) if token.token_type == TokenType::FloatNumber => {
-            let value = token.value.parse::<f64>()
-                .map_err(|_| format!("Invalid float format at position {:?}.", self.position))?;
-            self.advance();
-            Ok(AST::new(ASTNode::Float(value)))
-        },
-        Some(ref token) if token.token_type == TokenType::Boolean => {
-            let value = token.value == "true";
-            self.advance();
-            Ok(AST::new(ASTNode::Boolean(value)))
-        },
-        Some(ref token) if token.token_type == TokenType::Identifier => {
-            let value = token.value.clone();
-            if self.symbol_table.lookup(&value).is_none() {
-                return Err(format!("Undeclared variable '{}' at position {:?}.", value, self.position));
-            }
-            self.advance();
-            Ok(AST::new(ASTNode::Identifier(value)))
-        },
-        _ => Err(format!("Unexpected token {:?} at position {:?}. Expected a number, float, identifier, or boolean.", self.current_token, self.position)),
+    pub fn parse_factor(&mut self) -> Result<AST, String> {
+        match self.current_token {
+            Some(ref token) if token.token_type == TokenType::Number => {
+                let value = token.value.parse::<i64>()
+                    .map_err(|_| format!("Invalid integer format at position {:?}.", self.position))?;
+                self.advance();
+                Ok(AST::new(ASTNode::Int(value)))
+            },
+            Some(ref token) if token.token_type == TokenType::FloatNumber => {
+                let value = token.value.parse::<f64>()
+                    .map_err(|_| format!("Invalid float format at position {:?}.", self.position))?;
+                self.advance();
+                Ok(AST::new(ASTNode::Float(value)))
+            },
+            Some(ref token) if token.token_type == TokenType::Boolean => {
+                let value = token.value == "true";
+                self.advance();
+                Ok(AST::new(ASTNode::Boolean(value)))
+            },
+            Some(ref token) if token.token_type == TokenType::Identifier => {
+                let value = token.value.clone();
+                if self.symbol_table.lookup(&value).is_none() {
+                    return Err(format!("Undeclared variable '{}' at position {:?}.", value, self.position));
+                }
+                self.advance();
+                Ok(AST::new(ASTNode::Identifier(value)))
+            },
+            Some(ref token) if token.token_type == TokenType::LeftParen => {
+                self.advance(); 
+                let expr = self.parse_expression()?;
+                if !self.current_token_is(TokenType::RightParen) {
+                    return Err(format!("Expected ')' at position {:?}. Found {:?}", self.position, self.current_token));
+                }
+                self.advance(); 
+                Ok(expr)
+            },
+            _ => Err(format!("Unexpected token {:?} at position {:?}. Expected a number, float, identifier, or boolean.", self.current_token, self.position)),
+        }
     }
-}
     pub fn parse_assign_expr(&mut self) -> Result<AST, String> {
         if !self.current_token_is(TokenType::Assign) {
             return Err(format!(
@@ -308,37 +335,47 @@ pub fn parse_factor(&mut self) -> Result<AST, String> {
         self.advance(); 
 Ok(AST::new(ASTNode::Print(Box::new(expression))))
     }
-
-    // New method to handle boolean types
     pub fn infer_type(&self, ast: &AST) -> Result<SymbolType, String> {
-        match ast.node {
+        match &ast.node {
             ASTNode::Int(_) => Ok(SymbolType::Int),
             ASTNode::Float(_) => Ok(SymbolType::Float),
-            ASTNode::Boolean(_) => Ok(SymbolType::Boolean), // Added boolean type
-            ASTNode::Identifier(ref name) => {
-                self.symbol_table.lookup(name)
-                    .map(|symbol| symbol.symbol_type.clone())
-                    .ok_or_else(|| format!("Undefined variable '{}' at position {:?}", name, self.position))
-            },
-            ASTNode::BinaryOperation { ref left, ref right, .. } => {
+            ASTNode::Boolean(_) => Ok(SymbolType::Boolean),
+            ASTNode::Identifier(name) => self.symbol_table.lookup(name)
+                .map(|symbol| symbol.symbol_type.clone())
+                .ok_or_else(|| format!("Undefined variable: {}", name)),
+            ASTNode::BinaryOperation { operator, left, right } => {
                 let left_type = self.infer_type(left)?;
                 let right_type = self.infer_type(right)?;
-                if left_type != right_type {
-                    Err(format!("Type mismatch in binary operation. Left: {:?}, Right: {:?}", left_type, right_type))
-                } else {
-                    Ok(left_type)
+    
+                match operator.as_str() {
+                    "+" | "-" | "*" | "/" => {
+                        if (left_type == SymbolType::Int && right_type == SymbolType::Int) ||
+                           (left_type == SymbolType::Float && right_type == SymbolType::Float) {
+                            Ok(left_type)
+                        } else {
+                            Err(format!("Type mismatch: cannot perform '{}' operation between {:?} and {:?}.", operator, left_type, right_type))
+                        }
+                    }
+                    "==" | "!=" | ">" | "<" | ">=" | "<=" => Ok(SymbolType::Boolean),
+                    "&&" | "||" => {
+                        if left_type == SymbolType::Boolean && right_type == SymbolType::Boolean {
+                            Ok(SymbolType::Boolean)
+                        } else {
+                            Err(format!("Type mismatch: cannot perform '{}' operation between {:?} and {:?}.", operator, left_type, right_type))
+                        }
+                    }
+                    _ => Err(format!("Unknown operator: {}", operator)),
                 }
-            },
-            _ => Err(format!("Cannot infer type for AST node {:?}", ast.node)),
+            }
+            _ => Err(format!("Unknown AST node: {:?}", ast.node)),
         }
     }
 
-    // Add this method to evaluate expressions if needed
     pub fn evaluate_expression(&self, ast: &AST) -> Result<SymbolValue, String> {
         match ast.node {
             ASTNode::Int(value) => Ok(SymbolValue::Int(value)),
             ASTNode::Float(value) => Ok(SymbolValue::Float(value)),
-            ASTNode::Boolean(value) => Ok(SymbolValue::Boolean(value)), // Added boolean evaluation
+            ASTNode::Boolean(value) => Ok(SymbolValue::Boolean(value)),
             ASTNode::Identifier(ref name) => {
                 self.symbol_table.lookup(name)
                     .map(|symbol| symbol.value.clone())
@@ -347,7 +384,7 @@ Ok(AST::new(ASTNode::Print(Box::new(expression))))
             ASTNode::BinaryOperation { ref left, ref right, ref operator } => {
                 let left_value = self.evaluate_expression(left)?;
                 let right_value = self.evaluate_expression(right)?;
-
+    
                 match operator.as_str() {
                     "+" => match (left_value.clone(), right_value.clone()) {
                         (SymbolValue::Int(l), SymbolValue::Int(r)) => Ok(SymbolValue::Int(l + r)),
@@ -368,6 +405,36 @@ Ok(AST::new(ASTNode::Print(Box::new(expression))))
                         (SymbolValue::Int(l), SymbolValue::Int(r)) => Ok(SymbolValue::Int(l / r)),
                         (SymbolValue::Float(l), SymbolValue::Float(r)) => Ok(SymbolValue::Float(l / r)),
                         _ => Err(format!("Type mismatch for '/' operation. Left: {:?}, Right: {:?}", left_value, right_value)),
+                    },
+                    "==" => Ok(SymbolValue::Boolean(left_value == right_value)),
+                    "!=" => Ok(SymbolValue::Boolean(left_value != right_value)),
+                    ">" => match (left_value.clone(), right_value.clone()) {
+                        (SymbolValue::Int(l), SymbolValue::Int(r)) => Ok(SymbolValue::Boolean(l > r)),
+                        (SymbolValue::Float(l), SymbolValue::Float(r)) => Ok(SymbolValue::Boolean(l > r)),
+                        _ => Err(format!("Type mismatch for '>' operation. Left: {:?}, Right: {:?}", left_value, right_value)),
+                    },
+                    "<" => match (left_value.clone(), right_value.clone()) {
+                        (SymbolValue::Int(l), SymbolValue::Int(r)) => Ok(SymbolValue::Boolean(l < r)),
+                        (SymbolValue::Float(l), SymbolValue::Float(r)) => Ok(SymbolValue::Boolean(l < r)),
+                        _ => Err(format!("Type mismatch for '<' operation. Left: {:?}, Right: {:?}", left_value, right_value)),
+                    },
+                    ">=" => match (left_value.clone(), right_value.clone()) {
+                        (SymbolValue::Int(l), SymbolValue::Int(r)) => Ok(SymbolValue::Boolean(l >= r)),
+                        (SymbolValue::Float(l), SymbolValue::Float(r)) => Ok(SymbolValue::Boolean(l >= r)),
+                        _ => Err(format!("Type mismatch for '>=' operation. Left: {:?}, Right: {:?}", left_value, right_value)),
+                    },
+                    "<=" => match (left_value.clone(), right_value.clone()) {
+                        (SymbolValue::Int(l), SymbolValue::Int(r)) => Ok(SymbolValue::Boolean(l <= r)),
+                        (SymbolValue::Float(l), SymbolValue::Float(r)) => Ok(SymbolValue::Boolean(l <= r)),
+                        _ => Err(format!("Type mismatch for '<=' operation. Left: {:?}, Right: {:?}", left_value, right_value)),
+                    },
+                    "&&" => match (left_value.clone(), right_value.clone()) {
+                        (SymbolValue::Boolean(l), SymbolValue::Boolean(r)) => Ok(SymbolValue::Boolean(l && r)),
+                        _ => Err(format!("Type mismatch for '&&' operation. Left: {:?}, Right: {:?}", left_value, right_value)),
+                    },
+                    "||" => match (left_value.clone(), right_value.clone()) {
+                        (SymbolValue::Boolean(l), SymbolValue::Boolean(r)) => Ok(SymbolValue::Boolean(l || r)),
+                        _ => Err(format!("Type mismatch for '||' operation. Left: {:?}, Right: {:?}", left_value, right_value)),
                     },
                     _ => Err(format!("Unknown operator '{}' in binary operation.", operator)),
                 }

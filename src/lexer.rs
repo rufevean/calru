@@ -1,4 +1,3 @@
-
 use crate::models::{Position, Token, TokenType};
 
 pub fn lexer(input: &str) -> Vec<Token> {
@@ -244,6 +243,48 @@ pub fn lexer(input: &str) -> Vec<Token> {
                     Token::new(
                         TokenType::Operator,
                         "!".to_string(),
+                        Position { line, column: start_column },
+                    )
+                }
+            }
+
+            '&' => {
+                let start_column = column;
+                chars.next();
+                column += 1;
+                if chars.peek() == Some(&'&') {
+                    chars.next();
+                    column += 1;
+                    Token::new(
+                        TokenType::And,
+                        "&&".to_string(),
+                        Position { line, column: start_column },
+                    )
+                } else {
+                    Token::new(
+                        TokenType::Operator,
+                        "&".to_string(),
+                        Position { line, column: start_column },
+                    )
+                }
+            }
+
+            '|' => {
+                let start_column = column;
+                chars.next();
+                column += 1;
+                if chars.peek() == Some(&'|') {
+                    chars.next();
+                    column += 1;
+                    Token::new(
+                        TokenType::Or,
+                        "||".to_string(),
+                        Position { line, column: start_column },
+                    )
+                } else {
+                    Token::new(
+                        TokenType::Operator,
+                        "|".to_string(),
                         Position { line, column: start_column },
                     )
                 }

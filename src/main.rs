@@ -28,6 +28,7 @@ fn main() {
         if token.token_type == TokenType::Unknown {
             errors::invalid_char(token.clone());
         }
+        println!("{:?}", token);
     }
 
     let mut parser = Parser::new(tokens);

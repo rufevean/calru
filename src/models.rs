@@ -37,6 +37,9 @@ pub enum TokenType {
     LessThanOrEqual,
     Equal,
     NotEqual,
+    // Logical operators
+    And,
+    Or, 
 }
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Position {

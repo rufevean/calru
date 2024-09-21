@@ -1,14 +1,14 @@
 
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone,Copy, PartialEq)]
 pub enum SymbolType {
     Int,
     Float,
     Boolean,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,PartialEq)]
 pub enum SymbolValue {
     Int(i64),
     Float(f64),

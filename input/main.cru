@@ -4,7 +4,8 @@ let num3 :float := 3.0;
 let num4 :float := 1.5;
 let product :float := num1 * num2 * num3 * num4;
 stdout(product);
-if product < 10.0 then
+
+if (product < 10.0) then
     stdout(10);
 else 
     stdout(1);

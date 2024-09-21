@@ -73,57 +73,88 @@ impl Interpreter {
             ASTNode::BinaryOperation { left, right, operator } => {
                 let left_value = self.evaluate_expression(left)?;
                 let right_value = self.evaluate_expression(right)?;
-
+    
                 match (left_value, right_value) {
                     (SymbolValue::Int(left_val), SymbolValue::Int(right_val)) => {
                         let result = match operator.as_str() {
-                            "+" => left_val + right_val,
-                            "-" => left_val - right_val,
-                            "*" => left_val * right_val,
-                            "/" => left_val / right_val,
+                            "+" => SymbolValue::Int(left_val + right_val),
+                            "-" => SymbolValue::Int(left_val - right_val),
+                            "*" => SymbolValue::Int(left_val * right_val),
+                            "/" => SymbolValue::Int(left_val / right_val),
+                            ">" => SymbolValue::Boolean(left_val > right_val),
+                            "<" => SymbolValue::Boolean(left_val < right_val),
+                            ">=" => SymbolValue::Boolean(left_val >= right_val),
+                            "<=" => SymbolValue::Boolean(left_val <= right_val),
+                            "==" => SymbolValue::Boolean(left_val == right_val),
+                            "!=" => SymbolValue::Boolean(left_val != right_val),
                             _ => return Err(format!("Unsupported operator '{}' in binary operation.", operator)),
                         };
-                        Ok(SymbolValue::Int(result))
+                        Ok(result)
                     },
                     (SymbolValue::Float(left_val), SymbolValue::Float(right_val)) => {
                         let result = match operator.as_str() {
-                            "+" => left_val + right_val,
-                            "-" => left_val - right_val,
-                            "*" => left_val * right_val,
-                            "/" => left_val / right_val,
+                            "+" => SymbolValue::Float(left_val + right_val),
+                            "-" => SymbolValue::Float(left_val - right_val),
+                            "*" => SymbolValue::Float(left_val * right_val),
+                            "/" => SymbolValue::Float(left_val / right_val),
+                            ">" => SymbolValue::Boolean(left_val > right_val),
+                            "<" => SymbolValue::Boolean(left_val < right_val),
+                            ">=" => SymbolValue::Boolean(left_val >= right_val),
+                            "<=" => SymbolValue::Boolean(left_val <= right_val),
+                            "==" => SymbolValue::Boolean(left_val == right_val),
+                            "!=" => SymbolValue::Boolean(left_val != right_val),
                             _ => return Err(format!("Unsupported operator '{}' in binary operation.", operator)),
                         };
-                        Ok(SymbolValue::Float(result))
+                        Ok(result)
                     },
                     (SymbolValue::Int(left_val), SymbolValue::Float(right_val)) => {
                         let result = match operator.as_str() {
-                            "+" => (left_val as f64) + right_val,
-                            "-" => (left_val as f64) - right_val,
-                            "*" => (left_val as f64) * right_val,
-                            "/" => (left_val as f64) / right_val,
+                            "+" => SymbolValue::Float((left_val as f64) + right_val),
+                            "-" => SymbolValue::Float((left_val as f64) - right_val),
+                            "*" => SymbolValue::Float((left_val as f64) * right_val),
+                            "/" => SymbolValue::Float((left_val as f64) / right_val),
+                            ">" => SymbolValue::Boolean((left_val as f64) > right_val),
+                            "<" => SymbolValue::Boolean((left_val as f64) < right_val),
+                            ">=" => SymbolValue::Boolean((left_val as f64) >= right_val),
+                            "<=" => SymbolValue::Boolean((left_val as f64) <= right_val),
+                            "==" => SymbolValue::Boolean((left_val as f64) == right_val),
+                            "!=" => SymbolValue::Boolean((left_val as f64) != right_val),
                             _ => return Err(format!("Unsupported operator '{}' in binary operation.", operator)),
                         };
-                        Ok(SymbolValue::Float(result))
+                        Ok(result)
                     },
                     (SymbolValue::Float(left_val), SymbolValue::Int(right_val)) => {
                         let result = match operator.as_str() {
-                            "+" => left_val + (right_val as f64),
-                            "-" => left_val - (right_val as f64),
-                            "*" => left_val * (right_val as f64),
-                            "/" => left_val / (right_val as f64),
+                            "+" => SymbolValue::Float(left_val + (right_val as f64)),
+                            "-" => SymbolValue::Float(left_val - (right_val as f64)),
+                            "*" => SymbolValue::Float(left_val * (right_val as f64)),
+                            "/" => SymbolValue::Float(left_val / (right_val as f64)),
+                            ">" => SymbolValue::Boolean(left_val > (right_val as f64)),
+                            "<" => SymbolValue::Boolean(left_val < (right_val as f64)),
+                            ">=" => SymbolValue::Boolean(left_val >= (right_val as f64)),
+                            "<=" => SymbolValue::Boolean(left_val <= (right_val as f64)),
+                            "==" => SymbolValue::Boolean(left_val == (right_val as f64)),
+                            "!=" => SymbolValue::Boolean(left_val != (right_val as f64)),
                             _ => return Err(format!("Unsupported operator '{}' in binary operation.", operator)),
                         };
-                        Ok(SymbolValue::Float(result))
+                        Ok(result)
                     },
-                    (SymbolValue::Boolean(_), _) | (_, SymbolValue::Boolean(_)) => {
-                        Err("Boolean values cannot be used in arithmetic operations.".to_string())
+                    (SymbolValue::Boolean(left_val), SymbolValue::Boolean(right_val)) => {
+                        let result = match operator.as_str() {
+                            "&&" => SymbolValue::Boolean(left_val && right_val),
+                            "||" => SymbolValue::Boolean(left_val || right_val),
+                            "==" => SymbolValue::Boolean(left_val == right_val),
+                            "!=" => SymbolValue::Boolean(left_val != right_val),
+                            _ => return Err(format!("Unsupported operator '{}' in binary operation.", operator)),
+                        };
+                        Ok(result)
                     },
+                    _ => Err("Type mismatch in binary operation.".to_string()),
                 }
             },
             _ => Err(format!("Cannot evaluate expression node {:?}", expression.node)),
         }
     }
-
     fn infer_type(&self, node: &AST) -> Result<SymbolType, String> {
         match &node.node {
             ASTNode::Int(_) => Ok(SymbolType::Int),
