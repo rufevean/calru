@@ -1,4 +1,3 @@
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -125,6 +124,86 @@ mod tests {
                 left: Box::new(AST::new(ASTNode::Int(1))),
                 right: Box::new(AST::new(ASTNode::Int(2))),
             })),
+        });
+
+        match parser.parse_statement() {
+            Ok(ast) => assert_eq!(ast, expected_ast),
+            Err(e) => panic!("Parsing failed: {}", e),
+        }
+    }
+
+    #[test]
+    fn test_if_statement() {
+        let tokens = create_tokens(vec![
+            ("if", TokenType::If),
+            ("(", TokenType::LeftParen),
+            ("true", TokenType::Boolean),
+            (")", TokenType::RightParen),
+            ("then", TokenType::Then),
+            ("let", TokenType::Let),
+            ("variable1", TokenType::Identifier),
+            (":int", TokenType::IntType),
+            (":=", TokenType::Assign),
+            ("1", TokenType::Number),
+            (";", TokenType::Termination),
+            ("end", TokenType::End),
+        ]);
+
+        let mut parser = Parser::new(tokens);
+
+        let expected_ast = AST::new(ASTNode::If {
+            condition: Box::new(AST::new(ASTNode::Boolean(true))),
+            then_branch: Box::new(AST::new(ASTNode::Assignment {
+                variable: "variable1".to_string(),
+                expression: Box::new(AST::new(ASTNode::Int(1))),
+            })),
+            else_branch: None,
+        });
+
+        match parser.parse_statement() {
+            Ok(ast) => assert_eq!(ast, expected_ast),
+            Err(e) => panic!("Parsing failed: {}", e),
+        }
+    }
+
+
+
+    #[test]
+    fn test_if_else_statement() {
+        let tokens = create_tokens(vec![
+            ("if", TokenType::If),
+            ("(", TokenType::LeftParen),
+            ("false", TokenType::Boolean),
+            (")", TokenType::RightParen),
+            ("then", TokenType::Then),
+            ("let", TokenType::Let),
+            ("variable1", TokenType::Identifier),
+            (":int", TokenType::IntType),
+            (":=", TokenType::Assign),
+            ("1", TokenType::Number),
+            (";", TokenType::Termination),
+            ("else", TokenType::Else),
+            ("let", TokenType::Let),
+            ("variable2", TokenType::Identifier),
+            (":int", TokenType::IntType),
+            (":=", TokenType::Assign),
+            ("2", TokenType::Number),
+            (";", TokenType::Termination),
+            ("end", TokenType::End),
+        ]);
+
+        let mut parser = Parser::new(tokens);
+
+        let expected_ast = AST::new(ASTNode::If {
+            condition: Box::new(AST::new(ASTNode::Boolean(false))),
+            then_branch: Box::new(AST::new(ASTNode::Assignment {
+                variable: "variable1".to_string(),
+                expression: Box::new(AST::new(ASTNode::Int(1))),
+            })),
+            else_branch: Some(Box::new(AST::new(ASTNode::Assignment {
+                variable: "variable2".to_string(),
+                expression: Box::new(AST::new(ASTNode::Int(2))),
+            }))),
         });
 
         match parser.parse_statement() {

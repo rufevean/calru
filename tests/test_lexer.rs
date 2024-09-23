@@ -31,7 +31,9 @@ fn test_lexer_with_float() {
 fn test_lexer_with_comments() {
     let input = "let x := 5; // comment\nlet y := 10;";
     let tokens = lexer(input);
-
+    for token in tokens.clone(){
+        println!("{:?}", token);
+    }
     assert_eq!(tokens[0].token_type, TokenType::Let);
     assert_eq!(tokens[1].token_type, TokenType::Identifier);
     assert_eq!(tokens[2].token_type, TokenType::Assign);

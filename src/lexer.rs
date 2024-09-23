@@ -19,7 +19,15 @@ pub fn lexer(input: &str) -> Vec<Token> {
                 column = 1;
                 continue;
             }
-
+            '/' if chars.clone().nth(1) == Some('/') => {
+                while let Some(&next_ch) = chars.peek() {
+                    if next_ch == '\n' {
+                        break;
+                    }
+                    chars.next();
+                }
+                continue;
+            }
             '0'..='9' => {
                 let start_column = column;
                 let mut num = String::new();
