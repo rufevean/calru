@@ -1,4 +1,3 @@
-
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -7,6 +6,7 @@ pub enum ASTNode {
     Float(f64),
     Boolean(bool),
     Identifier(String),
+    List(Vec<AST>), // Add list variant
     BinaryOperation {
         operator: String,
         left: Box<AST>,
@@ -48,6 +48,10 @@ impl fmt::Display for ASTNode {
             ASTNode::Float(n) => write!(f, "Float({})", n),
             ASTNode::Boolean(b) => write!(f, "Boolean({})", b),
             ASTNode::Identifier(id) => write!(f, "Identifier({})", id),
+            ASTNode::List(elements) => {
+                let elements_str: Vec<String> = elements.iter().map(|e| e.to_string()).collect();
+                write!(f, "List([{}])", elements_str.join(", "))
+            }
             ASTNode::BinaryOperation { operator, left, right } => {
                 write!(f, "BinaryOperation({} {} {})", left, operator, right)
             }

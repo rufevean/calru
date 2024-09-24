@@ -1,4 +1,3 @@
-
 mod lexer;
 mod models;
 mod errors;
@@ -22,43 +21,42 @@ fn main() {
         .expect("should have been able to read the file");
     println!("{}", input);
 
-    let tokens = lexer::lexer(&input);
+    match lexer::lexer(&input) {
+        Ok(tokens) => {
+            for token in &tokens {
+                println!("{:?}", token);
+            }
 
-    for token in &tokens {
-        if token.token_type == TokenType::Unknown {
-            errors::invalid_char(token.clone());
-        }
-        println!("{:?}", token);
-    }
+            let mut parser = Parser::new(tokens);
+            match parser.parse_program() {
+                Ok((asts, symbol_table)) => { // Ensure parse_program returns both
+                    /*let mut all_instructions = Vec::new();
 
-    let mut parser = Parser::new(tokens);
-    match parser.parse_program() {
-        Ok((asts, symbol_table)) => { // Ensure parse_program returns both
-            
-            /*let mut all_instructions = Vec::new();
+                    for ast in &asts { 
+                        let instructions = generate_ir(ast);
+                        all_instructions.extend(instructions.clone());
 
-            for ast in &asts { 
-                let instructions = generate_ir(ast);
-                all_instructions.extend(instructions.clone());
+                        for instruction in &instructions {
+                            println!("{:?}", instruction);
+                        }
+                    }
+                    
+                    if let Err(e) = write_asm_file(&all_instructions, "output.asm") {
+                        eprintln!("Failed to write assembly file: {}", e);
+                    }
+                    */ 
 
-                for instruction in &instructions {
-                    println!("{:?}", instruction);
+                    let mut interpreter = Interpreter::new(symbol_table);
+
+                    for ast in asts {
+                        if let Err(e) = interpreter.run(vec![ast]) {
+                            eprintln!("Execution error: {}", e);
+                        }
+                    }
                 }
-            }
-            
-            if let Err(e) = write_asm_file(&all_instructions, "output.asm") {
-                eprintln!("Failed to write assembly file: {}", e);
-            }
-            */ 
-
-            let mut interpreter = Interpreter::new(symbol_table);
-
-            for ast in asts {
-                if let Err(e) = interpreter.run(vec![ast]) {
-                    eprintln!("Execution error: {}", e);
-                }
+                Err(e) => eprintln!("Error: {}", e),
             }
         }
-        Err(e) => eprintln!("Error: {}", e),
+        Err(e) => eprintln!("Lexing failed: {}", e),
     }
 }

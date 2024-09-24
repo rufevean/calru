@@ -1,4 +1,3 @@
-
 #[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
@@ -39,8 +38,17 @@ pub enum TokenType {
     NotEqual,
     // Logical operators
     And,
-    Or, 
+    Or,
+    // List tokens
+    LeftBracket,  // Add left bracket for list
+    RightBracket, // Add right bracket for list
+    Comma,        // Add comma for list elements
+    Colon, 
+    ListIntType,   // Add this line
+    ListFloatType, // Add this line
+    ListBoolType
 }
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Position {
     pub line: usize,

@@ -1,18 +1,19 @@
-
 use std::collections::HashMap;
 
-#[derive(Debug, Clone,Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum SymbolType {
     Int,
     Float,
     Boolean,
+    List(Box<SymbolType>), // Add list type
 }
 
-#[derive(Debug, Clone,PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum SymbolValue {
     Int(i64),
     Float(f64),
     Boolean(bool),
+    List(Vec<SymbolValue>), // Add list value
 }
 
 #[derive(Debug, Clone)]
@@ -21,7 +22,7 @@ pub struct Symbol {
     pub value: SymbolValue,
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct SymbolTable {
     symbols: HashMap<String, Symbol>,
 }
@@ -53,6 +54,7 @@ impl SymbolTable {
                 SymbolValue::Int(v) => v.to_string(),
                 SymbolValue::Float(v) => v.to_string(),
                 SymbolValue::Boolean(v) => v.to_string(),
+                SymbolValue::List(v) => format!("{:?}", v), // Handle list values
             };
             println!("{}: {:?} = {}", name, symbol.symbol_type, value_str);
         }

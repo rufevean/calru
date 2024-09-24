@@ -18,7 +18,6 @@ impl Interpreter {
         }
         Ok(())
     }
-
     fn execute_statement(&mut self, ast: &AST) -> Result<(), String> {
         match &ast.node {
             ASTNode::Assignment { variable, expression } => {
@@ -53,6 +52,12 @@ impl Interpreter {
                     self.execute_statement(then_branch)?;
                 } else if let Some(else_branch) = else_branch {
                     self.execute_statement(else_branch)?;
+                }
+            },
+            ASTNode::List(elements) => {
+                // Handle List nodes if needed
+                for element in elements {
+                    self.execute_statement(element)?;
                 }
             },
             _ => return Err(format!("Unsupported statement {:?}", ast.node)),
@@ -152,6 +157,13 @@ impl Interpreter {
                     _ => Err("Type mismatch in binary operation.".to_string()),
                 }
             },
+            ASTNode::List(elements) => {
+                let mut values = Vec::new();
+                for element in elements {
+                    values.push(self.evaluate_expression(element)?);
+                }
+                Ok(SymbolValue::List(values))
+            },
             _ => Err(format!("Cannot evaluate expression node {:?}", expression.node)),
         }
     }
@@ -198,6 +210,19 @@ impl Interpreter {
                         then_type, else_type
                     ))
                 }
+            },
+            ASTNode::List(elements) => {
+                if elements.is_empty() {
+                    return Err("Cannot infer type of empty list.".to_string());
+                }
+                let first_type = self.infer_type(&elements[0])?;
+                for element in elements.iter().skip(1) {
+                    let element_type = self.infer_type(element)?;
+                    if element_type != first_type {
+                        return Err(format!("Type mismatch in list elements: {:?} and {:?}.", first_type, element_type));
+                    }
+                }
+                Ok(SymbolType::List(Box::new(first_type)))
             }
         }
     }
@@ -208,7 +233,11 @@ impl fmt::Display for SymbolValue {
         match self {
             SymbolValue::Int(value) => write!(f, "{}", value),
             SymbolValue::Float(value) => write!(f, "{}", value),
-            SymbolValue::Boolean(value) => write!(f, "{}", value), // Add this line
+            SymbolValue::Boolean(value) => write!(f, "{}", value),
+            SymbolValue::List(values) => {
+                let values_str: Vec<String> = values.iter().map(|v| v.to_string()).collect();
+                write!(f, "[{}]", values_str.join(", "))
+            }
         }
     }
 }

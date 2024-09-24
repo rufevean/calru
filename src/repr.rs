@@ -1,4 +1,3 @@
-
 use crate::lexer::lexer;
 use crate::models::TokenType;
 use crate::parser::Parser;
@@ -6,7 +5,7 @@ use crate::errors;
 use crate::symbol_table::SymbolTable;
 use crate::ir::generator::generate_ir;
 use std::io::{self, Write};
-use crate::ast::AST;  
+use crate::ast::AST;
 
 pub fn interactive_lexer() {
     println!("Welcome to Calru. Enter your code and press Enter:");
@@ -29,20 +28,24 @@ pub fn interactive_lexer() {
             break;
         }
 
-        let tokens = lexer(trimmed_input);
-        let mut parser = Parser::new(tokens);
+        match lexer(trimmed_input) {
+            Ok(tokens) => {
+                let mut parser = Parser::new(tokens);
 
-        match parser.parse_statement() {
-            Ok(ast) => {
-                println!("Parsed AST:\n{}", ast);
-                let instructions = generate_ir(&ast);
+                match parser.parse_statement() {
+                    Ok(ast) => {
+                        println!("Parsed AST:\n{}", ast);
+                        let instructions = generate_ir(&ast);
 
-                println!("Generated Assembly Instructions:");
-                for instruction in instructions {
-                    println!("{:?}", instruction);
+                        println!("Generated Assembly Instructions:");
+                        for instruction in instructions {
+                            println!("{:?}", instruction);
+                        }
+                    }
+                    Err(e) => println!("Parsing failed: {}", e),
                 }
             }
-            Err(e) => println!("Parsing failed: {}", e),
+            Err(e) => println!("Lexing failed: {}", e),
         }
     }
 }

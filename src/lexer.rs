@@ -1,6 +1,6 @@
 use crate::models::{Position, Token, TokenType};
 
-pub fn lexer(input: &str) -> Vec<Token> {
+pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
     let mut tokens = Vec::new();
     let mut chars = input.chars().peekable();
     let mut line = 1;
@@ -79,6 +79,9 @@ pub fn lexer(input: &str) -> Vec<Token> {
                     "else" => TokenType::Else,
                     "end" => TokenType::End,
                     "true" | "false" => TokenType::Boolean, // Handle boolean literals
+                    "int" => TokenType::IntType,
+                    "float" => TokenType::FloatType,
+                    "bool" => TokenType::BoolType,
                     _ => TokenType::Identifier,
                 };
                 Token::new(
@@ -89,19 +92,18 @@ pub fn lexer(input: &str) -> Vec<Token> {
             }
 
             ':' => {
-                let mut token;
+                let start_column = column;
                 chars.next();
+                column += 1;
                 if chars.peek() == Some(&'=') {
-                    chars.next(); 
-                    token = Token::new(
+                    chars.next();
+                    column += 1;
+                    Token::new(
                         TokenType::Assign,
                         ":=".to_string(),
-                        Position { line, column },
-                    );
-                    column += 2;
+                        Position { line, column: start_column },
+                    )
                 } else {
-                    // Type declaration (e.g., ":float")
-                    let start_column = column;
                     let mut type_str = String::new();
                     while let Some(&ch) = chars.peek() {
                         if ch.is_alphabetic() {
@@ -117,13 +119,12 @@ pub fn lexer(input: &str) -> Vec<Token> {
                         "bool" => TokenType::BoolType,
                         _ => TokenType::Unknown,
                     };
-                    token = Token::new(
+                    Token::new(
                         token_type,
-                        type_str,
+                        format!(":{}", type_str),
                         Position { line, column: start_column },
-                    );
+                    )
                 }
-                token
             }
 
             '+' | '-' | '*' | '/' => {
@@ -298,6 +299,39 @@ pub fn lexer(input: &str) -> Vec<Token> {
                 }
             }
 
+            '[' => {
+                let token = Token::new(
+                    TokenType::LeftBracket,
+                    ch.to_string(),
+                    Position { line, column },
+                );
+                chars.next();
+                column += 1;
+                token
+            }
+
+            ']' => {
+                let token = Token::new(
+                    TokenType::RightBracket,
+                    ch.to_string(),
+                    Position { line, column },
+                );
+                chars.next();
+                column += 1;
+                token
+            }
+
+            ',' => {
+                let token = Token::new(
+                    TokenType::Comma,
+                    ch.to_string(),
+                    Position { line, column },
+                );
+                chars.next();
+                column += 1;
+                token
+            }
+
             _ => {
                 let token = Token::new(
                     TokenType::Unknown,
@@ -317,5 +351,5 @@ pub fn lexer(input: &str) -> Vec<Token> {
         Position { line, column },
     ));
 
-    tokens
+    Ok(tokens)
 }
