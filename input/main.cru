@@ -1,1 +1,2 @@
-let product :[float] = [12.0,11.0]
+let product :[float] := [12.0,11.0];
+stdout(product);

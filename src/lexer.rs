@@ -103,7 +103,9 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
                         ":=".to_string(),
                         Position { line, column: start_column },
                     )
-                } else {
+                } else if chars.peek() == Some(&'[') {
+                    chars.next();
+                    column += 1;
                     let mut type_str = String::new();
                     while let Some(&ch) = chars.peek() {
                         if ch.is_alphabetic() {
@@ -113,15 +115,31 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
                             break;
                         }
                     }
-                    let token_type = match type_str.as_str() {
-                        "int" => TokenType::IntType,
-                        "float" => TokenType::FloatType,
-                        "bool" => TokenType::BoolType,
-                        _ => TokenType::Unknown,
-                    };
+                    if chars.peek() == Some(&']') {
+                        chars.next();
+                        column += 1;
+                        let token_type = match type_str.as_str() {
+                            "int" => TokenType::ListIntType,
+                            "float" => TokenType::ListFloatType,
+                            "bool" => TokenType::ListBoolType,
+                            _ => TokenType::Unknown,
+                        };
+                        Token::new(
+                            token_type,
+                            format!(":[{}]", type_str),
+                            Position { line, column: start_column },
+                        )
+                    } else {
+                        Token::new(
+                            TokenType::Unknown,
+                            format!(":[{}]", type_str),
+                            Position { line, column: start_column },
+                        )
+                    }
+                } else {
                     Token::new(
-                        token_type,
-                        format!(":{}", type_str),
+                        TokenType::Unknown,
+                        ":".to_string(),
                         Position { line, column: start_column },
                     )
                 }

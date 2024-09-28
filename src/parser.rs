@@ -109,80 +109,89 @@ impl Parser {
         }))
     }
 
-        pub fn parse_let_decl(&mut self) -> Result<AST, String> {
-            if !self.current_token_is(TokenType::Let) {
-                return Err(format!("Expected 'let' at position {:?}. Found {:?}", self.position, self.current_token));
-            }
-    
-            self.advance(); 
-            if !self.current_token_is(TokenType::Identifier) {
-                return Err(format!("Expected identifier at position {:?}. Found {:?}", self.position, self.current_token));
-            }
-    
-            let variable = self.current_token.as_ref().unwrap().value.clone();
-            if self.symbol_table.lookup(&variable).is_some() {
-                return Err(format!(
-                    "Variable '{}' already declared at position {:?}.",
-                    variable, self.position
-                ));
-            }
-    
-            self.advance(); 
-    
-            let symbol_type = match self.current_token {
-                Some(ref token) if token.token_type == TokenType::IntType => SymbolType::Int,
-                Some(ref token) if token.token_type == TokenType::FloatType => SymbolType::Float,
-                Some(ref token) if token.token_type == TokenType::BoolType => SymbolType::Boolean,
-                Some(ref token) if token.token_type == TokenType::ListIntType => SymbolType::List(Box::new(SymbolType::Int)),
-                Some(ref token) if token.token_type == TokenType::ListFloatType => SymbolType::List(Box::new(SymbolType::Float)),
-                Some(ref token) if token.token_type == TokenType::ListBoolType => SymbolType::List(Box::new(SymbolType::Boolean)),
-                _ => return Err(format!(
-                    "Expected type 'int', 'float', 'bool', or list at position {:?}. Found {:?}.",
-                    self.position, self.current_token
-                )),
-            };
-    
-            self.advance(); 
-            if !self.current_token_is(TokenType::Assign) {
-                return Err(format!(
-                    "Expected ':=' at position {:?}. Found {:?}",
-                    self.position, self.current_token
-                ));
-            }
-    
-            self.advance();
-            let expression = self.parse_expression()?;
-    
-            if !self.current_token_is(TokenType::Termination) {
-                return Err(format!(
-                    "Expected ';' at position {:?}. Found {:?}",
-                    self.position, self.current_token
-                ));
-            }
-    
-            self.advance();
-    
-            let expr_type = self.infer_type(&expression)?;
-            if expr_type != symbol_type {
-                return Err(format!(
-                    "Type mismatch: cannot assign expression of type {:?} to variable of type {:?} at position {:?}.",
-                    expr_type, symbol_type, self.position
-                ));
-            }
-    
-            let value = self.evaluate_expression(&expression)?;
-    
-            self.symbol_table.insert(variable.clone(), symbol_type, value)
-                .map_err(|e| format!("Error inserting symbol into symbol table: {}", e))?;
-    
-            Ok(AST::new(ASTNode::Assignment {
-                variable,
-                expression: Box::new(expression),
-            }))
+    pub fn parse_let_decl(&mut self) -> Result<AST, String> {
+        if !self.current_token_is(TokenType::Let) {
+            return Err(format!("Expected 'let' at position {:?}. Found {:?}", self.position, self.current_token));
         }
     
+        self.advance(); 
+        if !self.current_token_is(TokenType::Identifier) {
+            return Err(format!("Expected identifier at position {:?}. Found {:?}", self.position, self.current_token));
+        }
     
-
+        let variable = self.current_token.as_ref().unwrap().value.clone();
+        if self.symbol_table.lookup(&variable).is_some() {
+            return Err(format!(
+                "Variable '{}' already declared at position {:?}.",
+                variable, self.position
+            ));
+        }
+    
+        self.advance(); 
+    
+        let symbol_type = match self.current_token {
+            Some(ref token) if token.token_type == TokenType::IntType => SymbolType::Int,
+            Some(ref token) if token.token_type == TokenType::FloatType => SymbolType::Float,
+            Some(ref token) if token.token_type == TokenType::BoolType => SymbolType::Boolean,
+            Some(ref token) if token.token_type == TokenType::ListIntType => SymbolType::List(Box::new(SymbolType::Int)),
+            Some(ref token) if token.token_type == TokenType::ListFloatType => SymbolType::List(Box::new(SymbolType::Float)),
+            Some(ref token) if token.token_type == TokenType::ListBoolType => SymbolType::List(Box::new(SymbolType::Boolean)),
+            Some(ref token) if token.token_type == TokenType::Colon => {
+                self.advance(); // Advance to the next token
+                match self.current_token {
+                    Some(ref token) if token.token_type == TokenType::IntType => SymbolType::List(Box::new(SymbolType::Int)),
+                    Some(ref token) if token.token_type == TokenType::FloatType => SymbolType::List(Box::new(SymbolType::Float)),
+                    Some(ref token) if token.token_type == TokenType::BoolType => SymbolType::List(Box::new(SymbolType::Boolean)),
+                    _ => return Err(format!(
+                        "Expected list type 'int', 'float', or 'bool' at position {:?}. Found {:?}.",
+                        self.position, self.current_token
+                    )),
+                }
+            },
+            _ => return Err(format!(
+                "Expected type 'int', 'float', 'bool', or list at position {:?}. Found {:?}.",
+                self.position, self.current_token
+            )),
+        };
+    
+        self.advance(); 
+        if !self.current_token_is(TokenType::Assign) {
+            return Err(format!(
+                "Expected ':=' at position {:?}. Found {:?}",
+                self.position, self.current_token
+            ));
+        }
+    
+        self.advance();
+        let expression = self.parse_expression()?;
+    
+        if !self.current_token_is(TokenType::Termination) {
+            return Err(format!(
+                "Expected ';' at position {:?}. Found {:?}",
+                self.position, self.current_token
+            ));
+        }
+    
+        self.advance();
+    
+        let expr_type = self.infer_type(&expression)?;
+        if expr_type != symbol_type {
+            return Err(format!(
+                "Type mismatch: cannot assign expression of type {:?} to variable of type {:?} at position {:?}.",
+                expr_type, symbol_type, self.position
+            ));
+        }
+    
+        let value = self.evaluate_expression(&expression)?;
+    
+        self.symbol_table.insert(variable.clone(), symbol_type, value)
+            .map_err(|e| format!("Error inserting symbol into symbol table: {}", e))?;
+    
+        Ok(AST::new(ASTNode::Assignment {
+            variable,
+            expression: Box::new(expression),
+        }))
+    }
     
     pub fn parse_expression(&mut self) -> Result<AST, String> {
         let mut left = self.parse_term()?;

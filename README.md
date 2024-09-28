@@ -44,7 +44,12 @@ Factors and operands
 Factor      → Number
             | Identifier
             | '(' Expression ')'
+            | List
+            | ListIndex
 
+List        → '[' (Expression (',' Expression)*)? ']'
+
+ListIndex   → Identifier '[' Expression ']'
  ```
 
 ## Language Features
@@ -82,6 +87,8 @@ let num2 :float := 4.0;
 let num3 :float := 3.0;
 let num4 :float := 1.5;
 let product :float := num1 * num2 * num3 * num4;
+let list1 :[float] := [1.0, 2.0, 3.0, 4.0]; 
+stdout(list1);
 stdout(product);
 
 if (product < 10.0) then
@@ -103,8 +110,9 @@ end;
 ## Future Plans
 
 -   **Add CLI Options**: Separate lexer, parser, and other components with command-line options.
--   **Implement Parentheses**: Support for parentheses in expressions.
 -   **Expand Language Features**: Include trigonometric functions and other advanced math features.
+-  **Add list indexing**: Support indexing into lists to access elements.
+-  **Add Loops**: Implement loop functionality to support iteration. 
 -   **perform more tests**: Add more tests to ensure the correctness of the compiler.
 			
 ## Contributing
