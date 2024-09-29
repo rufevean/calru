@@ -1,2 +1,3 @@
-let product :[float] := [12.0,11.0];
-stdout(product);
+let product :[float] := [12.0, 11.0];
+let ff :float := product.fetch(1);
+stdout(ff);

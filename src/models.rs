@@ -46,7 +46,9 @@ pub enum TokenType {
     Colon, 
     ListIntType,   // Add this line
     ListFloatType, // Add this line
-    ListBoolType
+    ListBoolType,
+    Dot,           // Add dot for method calls
+    Fetch          // Add fetch for list indexing
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

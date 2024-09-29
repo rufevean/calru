@@ -47,6 +47,22 @@ impl SymbolTable {
         self.symbols.get(name)
     }
 
+    pub fn fetch(&self, list_name: &str, index: usize) -> Result<SymbolValue, String> {
+        if let Some(symbol) = self.symbols.get(list_name) {
+            if let SymbolValue::List(ref list) = symbol.value {
+                if index < list.len() {
+                    Ok(list[index].clone())
+                } else {
+                    Err(format!("Index {} out of bounds for list '{}'", index, list_name))
+                }
+            } else {
+                Err(format!("Symbol '{}' is not a list", list_name))
+            }
+        } else {
+            Err(format!("Symbol '{}' not found", list_name))
+        }
+    }
+
     pub fn print(&self) {
         println!("Symbol Table:");
         for (name, symbol) in &self.symbols {

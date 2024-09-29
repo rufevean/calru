@@ -50,7 +50,17 @@ Factor      → Number
 List        → '[' (Expression (',' Expression)*)? ']'
 
 ListIndex   → Identifier '[' Expression ']'
+
+Fetch       → List'.' 'fetch' '(' Index ')'
  ```
+
+
+## Latest Update
+- Add support for fetching elements from a list.
+
+## Next Steps
+
+- Add push and pop operations for lists. 
 
 ## Language Features
 
@@ -97,7 +107,7 @@ else
     stdout(1);
 end;
 ```
-### Explanation
+### Explanation:
 
 -  The code declares four floating-point variables `num1`, `num2`, `num3`, and `num4`.
 -  The product of these variables is calculated and stored in the `product` variable.

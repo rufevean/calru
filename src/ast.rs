@@ -6,7 +6,7 @@ pub enum ASTNode {
     Float(f64),
     Boolean(bool),
     Identifier(String),
-    List(Vec<AST>), // Add list variant
+    List(Vec<AST>),
     BinaryOperation {
         operator: String,
         left: Box<AST>,
@@ -21,6 +21,10 @@ pub enum ASTNode {
         condition: Box<AST>,
         then_branch: Box<AST>,
         else_branch: Option<Box<AST>>,
+    },
+    Fetch {
+        list: Box<AST>,
+        index: Box<AST>,
     },
 }
 
@@ -64,6 +68,9 @@ impl fmt::Display for ASTNode {
             ASTNode::If { condition, then_branch, else_branch } => {
                 write!(f, "If({} then {} else {})", condition, then_branch, 
                     if let Some(else_branch) = else_branch { else_branch.to_string() } else { "None".to_string() })
+            }
+            ASTNode::Fetch { list, index } => {
+                write!(f, "Fetch({}.fetch({}))", list, index)
             }
         }
     }

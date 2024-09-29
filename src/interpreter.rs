@@ -1,4 +1,3 @@
-
 use crate::symbol_table::{SymbolTable, SymbolType, SymbolValue};
 use crate::ast::{AST, ASTNode};
 use std::fmt;
@@ -18,6 +17,7 @@ impl Interpreter {
         }
         Ok(())
     }
+
     fn execute_statement(&mut self, ast: &AST) -> Result<(), String> {
         match &ast.node {
             ASTNode::Assignment { variable, expression } => {
@@ -164,9 +164,28 @@ impl Interpreter {
                 }
                 Ok(SymbolValue::List(values))
             },
+            ASTNode::Fetch { list, index } => {
+                let list_value = self.evaluate_expression(list)?;
+                let index_value = self.evaluate_expression(index)?;
+
+                if let SymbolValue::List(elements) = list_value {
+                    if let SymbolValue::Int(index) = index_value {
+                        if index >= 0 && (index as usize) < elements.len() {
+                            Ok(elements[index as usize].clone())
+                        } else {
+                            Err(format!("Index {} out of bounds.", index))
+                        }
+                    } else {
+                        Err("Index must be an integer.".to_string())
+                    }
+                } else {
+                    Err("Fetch operation can only be performed on lists.".to_string())
+                }
+            }
             _ => Err(format!("Cannot evaluate expression node {:?}", expression.node)),
         }
     }
+
     fn infer_type(&self, node: &AST) -> Result<SymbolType, String> {
         match &node.node {
             ASTNode::Int(_) => Ok(SymbolType::Int),
@@ -223,6 +242,20 @@ impl Interpreter {
                     }
                 }
                 Ok(SymbolType::List(Box::new(first_type)))
+            }
+            ASTNode::Fetch { list, index } => {
+                let list_type = self.infer_type(list)?;
+                let index_type = self.infer_type(index)?;
+
+                if let SymbolType::List(element_type) = list_type {
+                    if index_type == SymbolType::Int {
+                        Ok(*element_type)
+                    } else {
+                        Err("Index must be of type Int.".to_string())
+                    }
+                } else {
+                    Err("Fetch operation can only be performed on lists.".to_string())
+                }
             }
         }
     }

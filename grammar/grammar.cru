@@ -33,3 +33,5 @@ Factor      → Number
 List        → '[' (Expression (',' Expression)*)? ']'
 
 ListIndex   → Identifier '[' Expression ']'
+
+Fetch       → List'.' 'fetch' '(' Index ')'

@@ -108,7 +108,7 @@ impl Parser {
             else_branch: else_branch.map(Box::new),
         }))
     }
-
+ 
     pub fn parse_let_decl(&mut self) -> Result<AST, String> {
         if !self.current_token_is(TokenType::Let) {
             return Err(format!("Expected 'let' at position {:?}. Found {:?}", self.position, self.current_token));
@@ -163,7 +163,12 @@ impl Parser {
         }
     
         self.advance();
-        let expression = self.parse_expression()?;
+        let mut expression = self.parse_expression()?;
+    
+        // Check for fetch method call
+        if self.current_token_is(TokenType::Dot) {
+            expression = self.parse_fetch(expression)?;
+        }
     
         if !self.current_token_is(TokenType::Termination) {
             return Err(format!(
@@ -192,7 +197,39 @@ impl Parser {
             expression: Box::new(expression),
         }))
     }
-    
+    pub fn parse_fetch(&mut self, list: AST) -> Result<AST, String> {
+        if !self.current_token_is(TokenType::Dot) {
+            return Err(format!("Expected '.' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+
+        self.advance(); // Consume '.'
+
+        if !self.current_token_is(TokenType::Fetch) {
+            return Err(format!("Expected 'fetch' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+
+        self.advance(); // Consume 'fetch'
+
+        if !self.current_token_is(TokenType::LeftParen) {
+            return Err(format!("Expected '(' after 'fetch' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+
+        self.advance(); // Consume '('
+
+        let index = self.parse_expression()?;
+
+        if !self.current_token_is(TokenType::RightParen) {
+            return Err(format!("Expected ')' after index expression at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+
+        self.advance(); // Consume ')'
+
+        Ok(AST::new(ASTNode::Fetch {
+            list: Box::new(list),
+            index: Box::new(index),
+        }))
+    }
+
     pub fn parse_expression(&mut self) -> Result<AST, String> {
         let mut left = self.parse_term()?;
         let mut left_type = self.infer_type(&left)?;
@@ -290,11 +327,11 @@ impl Parser {
             }
     
             left = AST::new(ASTNode::BinaryOperation {
-                operator,
                 left: Box::new(left),
                 right: Box::new(right),
+                operator,
             });
-            left_type = left_type;
+            left_type = self.infer_type(&left)?;
         }
     
         Ok(left)
@@ -390,6 +427,7 @@ impl Parser {
         self.advance(); 
 Ok(AST::new(ASTNode::Print(Box::new(expression))))
     }
+
     pub fn infer_type(&self, ast: &AST) -> Result<SymbolType, String> {
         match &ast.node {
             ASTNode::Int(_) => Ok(SymbolType::Int),
@@ -435,15 +473,29 @@ Ok(AST::new(ASTNode::Print(Box::new(expression))))
                     _ => Err(format!("Unknown operator: {}", operator)),
                 }
             }
+            ASTNode::Fetch { list, index } => {
+                let list_type = self.infer_type(list)?;
+                let index_type = self.infer_type(index)?;
+    
+                if index_type != SymbolType::Int {
+                    return Err(format!("Type mismatch: index must be of type Int, found {:?}.", index_type));
+                }
+    
+                if let SymbolType::List(element_type) = list_type {
+                    Ok(*element_type)
+                } else {
+                    Err(format!("Type mismatch: fetch operation can only be performed on lists, found {:?}.", list_type))
+                }
+            }
             _ => Err(format!("Unknown AST node: {:?}", ast.node)),
         }
     }
 
     pub fn evaluate_expression(&self, ast: &AST) -> Result<SymbolValue, String> {
-        match ast.node {
-            ASTNode::Int(value) => Ok(SymbolValue::Int(value)),
-            ASTNode::Float(value) => Ok(SymbolValue::Float(value)),
-            ASTNode::Boolean(value) => Ok(SymbolValue::Boolean(value)),
+        match &ast.node {
+            ASTNode::Int(value) => Ok(SymbolValue::Int(*value)),
+            ASTNode::Float(value) => Ok(SymbolValue::Float(*value)),
+            ASTNode::Boolean(value) => Ok(SymbolValue::Boolean(*value)),
             ASTNode::Identifier(ref name) => {
                 self.symbol_table.lookup(name)
                     .map(|symbol| symbol.value.clone())
@@ -514,10 +566,27 @@ Ok(AST::new(ASTNode::Print(Box::new(expression))))
                     _ => Err(format!("Unknown operator '{}' in binary operation.", operator)),
                 }
             },
+            ASTNode::Fetch { ref list, ref index } => {
+                let list_value = self.evaluate_expression(list)?;
+                let index_value = self.evaluate_expression(index)?;
+    
+                if let SymbolValue::List(elements) = list_value {
+                    if let SymbolValue::Int(index) = index_value {
+                        if index >= 0 && (index as usize) < elements.len() {
+                            Ok(elements[index as usize].clone())
+                        } else {
+                            Err(format!("Index {} out of bounds.", index))
+                        }
+                    } else {
+                        Err("Index must be an integer.".to_string())
+                    }
+                } else {
+                    Err("Fetch operation can only be performed on lists.".to_string())
+                }
+            }
             _ => Err(format!("Cannot evaluate AST node {:?}", ast.node)),
         }
     }
-
     pub fn advance(&mut self) {
         if self.current_index < self.tokens.len() {
             self.current_token = Some(self.tokens[self.current_index].clone());
