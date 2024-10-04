@@ -149,6 +149,6 @@ fn test_unexpected_token() {
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err(),
-        "Unexpected token Some(Token { token_type: Number, value: \"42\", position: Position { line: 1, column: 1 } }) at position Position { line: 1, column: 1 }. Expected 'let', 'stdout', or 'if'."
+        "Unexpected token Some(Token { token_type: Number, value: \"42\", position: Position { line: 1, column: 1 } }) at position Position { line: 1, column: 1 }. Expected 'let', 'stdout', 'if', or an identifier."
     );
 }

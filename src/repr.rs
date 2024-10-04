@@ -1,16 +1,11 @@
 use crate::lexer::lexer;
-use crate::models::TokenType;
 use crate::parser::Parser;
-use crate::errors;
-use crate::symbol_table::SymbolTable;
 use crate::ir::generator::generate_ir;
 use std::io::{self, Write};
-use crate::ast::AST;
 
 pub fn interactive_lexer() {
     println!("Welcome to Calru. Enter your code and press Enter:");
 
-    let mut symbol_table = SymbolTable::new();
 
     loop {
         print!(">>> ");

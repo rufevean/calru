@@ -82,7 +82,9 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
                     "int" => TokenType::IntType,
                     "float" => TokenType::FloatType,
                     "bool" => TokenType::BoolType,
-                    "fetch" => TokenType::Fetch, // Handle fetch keyword
+                    "fetch" => TokenType::Fetch, 
+                    "push" => TokenType::Push,
+                    "pop" => TokenType::Pop,
                     _ => TokenType::Identifier,
                 };
                 Token::new(

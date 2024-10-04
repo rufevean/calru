@@ -40,19 +40,73 @@ impl Parser {
 
         Ok((asts, self.symbol_table.clone()))
     }
-
+  
     pub fn parse_statement(&mut self) -> Result<AST, String> {
         match self.current_token {
             Some(ref token) if token.token_type == TokenType::Let => self.parse_let_decl(),
             Some(ref token) if token.token_type == TokenType::Print => self.parse_print(),
             Some(ref token) if token.token_type == TokenType::If => self.parse_if_statement(),
+            Some(ref token) if token.token_type == TokenType::Identifier => {
+                let identifier = token.value.clone();
+                self.advance();
+                if self.current_token_is(TokenType::Dot) {
+                    self.advance();
+                    if self.current_token_is(TokenType::Push) {
+                        self.parse_push(identifier)
+                    } else if self.current_token_is(TokenType::Pop) {
+                        self.parse_pop(identifier)
+                    } else {
+                        Err(format!(
+                            "Unexpected token {:?} at position {:?}. Expected 'push' or 'pop'.",
+                            self.current_token, self.position
+                        ))
+                    }
+                } else {
+                    Err(format!(
+                        "Unexpected token {:?} at position {:?}. Expected '.' for method call.",
+                        self.current_token, self.position
+                    ))
+                }
+            }
             _ => Err(format!(
-                "Unexpected token {:?} at position {:?}. Expected 'let', 'stdout', or 'if'.",
+                "Unexpected token {:?} at position {:?}. Expected 'let', 'stdout', 'if', or an identifier.",
                 self.current_token, self.position
             )),
         }
     }
 
+    pub fn parse_push(&mut self, list_name: String) -> Result<AST, String> {
+        if !self.current_token_is(TokenType::Push) {
+            return Err(format!("Expected 'push' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume 'push'
+    
+        if !self.current_token_is(TokenType::LeftParen) {
+            return Err(format!("Expected '(' after 'push' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume '('
+    
+        let value = self.parse_expression()?;
+    
+        if !self.current_token_is(TokenType::RightParen) {
+            return Err(format!("Expected ')' after value expression at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume ')'
+    
+        if !self.current_token_is(TokenType::Termination) {
+            return Err(format!("Expected ';' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume ';'
+    
+        Ok(AST::new(ASTNode::Push {
+            list: Box::new(AST::new(ASTNode::Identifier(list_name))),
+            value: Box::new(value),
+        }))
+    }
     pub fn parse_if_statement(&mut self) -> Result<AST, String> {
         if !self.current_token_is(TokenType::If) {
             return Err(format!("Expected 'if' at position {:?}. Found {:?}", self.position, self.current_token));
@@ -108,7 +162,35 @@ impl Parser {
             else_branch: else_branch.map(Box::new),
         }))
     }
- 
+    pub fn parse_pop(&mut self, list_name: String) -> Result<AST, String> {
+        if !self.current_token_is(TokenType::Pop) {
+            return Err(format!("Expected 'pop' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume 'pop'
+    
+        if !self.current_token_is(TokenType::LeftParen) {
+            return Err(format!("Expected '(' after 'pop' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume '('
+    
+        if !self.current_token_is(TokenType::RightParen) {
+            return Err(format!("Expected ')' after 'pop' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume ')'
+    
+        if !self.current_token_is(TokenType::Termination) {
+            return Err(format!("Expected ';' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume ';'
+    
+        Ok(AST::new(ASTNode::Pop {
+            list: Box::new(AST::new(ASTNode::Identifier(list_name))),
+        }))
+    }
     pub fn parse_let_decl(&mut self) -> Result<AST, String> {
         if !self.current_token_is(TokenType::Let) {
             return Err(format!("Expected 'let' at position {:?}. Found {:?}", self.position, self.current_token));
@@ -249,22 +331,20 @@ impl Parser {
             let right_type = self.infer_type(&right)?;
     
 
-            if (operator == "==" || operator == "!=" || operator == ">" || operator == "<" || operator == ">=" || operator == "<=") {
+            if operator == "==" || operator == "!=" || operator == ">" || operator == "<" || operator == ">=" || operator == "<=" {
                 if left_type != right_type {
                     return Err(format!(
                         "Type mismatch: cannot perform '{}' operation between {:?} and {:?} at position {:?}.",
                         operator, left_type, right_type, self.position
                     ));
                 }
-                left_type = SymbolType::Boolean;
-            } else if (operator == "&&" || operator == "||") {
+            } else if operator == "&&" || operator == "||" {
                 if left_type != SymbolType::Boolean || right_type != SymbolType::Boolean {
                     return Err(format!(
                         "Type mismatch: cannot perform '{}' operation between {:?} and {:?} at position {:?}.",
                         operator, left_type, right_type, self.position
                     ));
                 }
-                left_type = SymbolType::Boolean;
             } else if left_type != right_type {
                 return Err(format!(
                     "Type mismatch: cannot perform '{}' operation between {:?} and {:?} at position {:?}.",
@@ -379,7 +459,7 @@ impl Parser {
             _ => Err(format!("Unexpected token {:?} at position {:?}. Expected a number, float, identifier, boolean, or list.", self.current_token, self.position)),
         }
     }
-    pub fn parse_assign_expr(&mut self) -> Result<AST, String> {
+/*    pub fn parse_assign_expr(&mut self) -> Result<AST, String> {
         if !self.current_token_is(TokenType::Assign) {
             return Err(format!(
                 "Expected ':=' at position {:?}. Found {:?}",
@@ -399,7 +479,7 @@ impl Parser {
     
         self.advance();
         Ok(expr)
-    }
+    } */
 
     pub fn parse_print(&mut self) -> Result<AST, String> {
         if !self.current_token_is(TokenType::Print) {
@@ -471,6 +551,20 @@ Ok(AST::new(ASTNode::Print(Box::new(expression))))
                         }
                     }
                     _ => Err(format!("Unknown operator: {}", operator)),
+                }
+            }
+            ASTNode::Push { list, value } => {
+                let list_type = self.infer_type(list)?;
+                let value_type = self.infer_type(value)?;
+    
+                if let SymbolType::List(element_type) = list_type {
+                    if *element_type == value_type {
+                        Ok(SymbolType::List(element_type))
+                    } else {
+                        Err(format!("Type mismatch: cannot push value of type {:?} to list of type {:?}.", value_type, element_type))
+                    }
+                } else {
+                    Err(format!("Type mismatch: push operation can only be performed on lists, found {:?}.", list_type))
                 }
             }
             ASTNode::Fetch { list, index } => {
@@ -582,6 +676,17 @@ Ok(AST::new(ASTNode::Print(Box::new(expression))))
                     }
                 } else {
                     Err("Fetch operation can only be performed on lists.".to_string())
+                }
+            }
+            ASTNode::Push { list, value } => {
+                let list_value = self.evaluate_expression(list)?;
+                let value_value = self.evaluate_expression(value)?;
+    
+                if let SymbolValue::List(mut elements) = list_value {
+                    elements.push(value_value);
+                    Ok(SymbolValue::List(elements))
+                } else {
+                    Err("Push operation can only be performed on lists.".to_string())
                 }
             }
             _ => Err(format!("Cannot evaluate AST node {:?}", ast.node)),

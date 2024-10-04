@@ -49,18 +49,24 @@ Factor      → Number
 
 List        → '[' (Expression (',' Expression)*)? ']'
 
-ListIndex   → Identifier '[' Expression ']'
+
+Push statement
+PushStmt    → Identifier '.' 'push' '(' Expression ')' ';'
+
+Pop statement
+PopStmt     → Identifier '.' 'pop' '(' ')' ';'
+
 
 Fetch       → List'.' 'fetch' '(' Index ')'
  ```
 
 
 ## Latest Update
-- Add support for fetching elements from a list.
+- Add push and pop operations for lists. 
 
 ## Next Steps
 
-- Add push and pop operations for lists. 
+- Added traversal
 
 ## Language Features
 

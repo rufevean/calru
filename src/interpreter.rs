@@ -25,7 +25,7 @@ impl Interpreter {
                 let symbol_type = self.symbol_table.lookup(variable)
                     .ok_or_else(|| format!("Variable '{}' not found.", variable))?
                     .symbol_type.clone();
-
+    
                 if self.infer_type(&AST::new(ASTNode::Assignment { variable: variable.clone(), expression: expression.clone() }))? != symbol_type {
                     return Err(format!(
                         "Type mismatch: cannot assign value of type {:?} to variable of type {:?}.",
@@ -33,7 +33,7 @@ impl Interpreter {
                         symbol_type
                     ));
                 }
-
+    
                 self.symbol_table.insert(variable.clone(), symbol_type, value)?;
             },
             ASTNode::Print(expression) => {
@@ -60,6 +60,25 @@ impl Interpreter {
                     self.execute_statement(element)?;
                 }
             },
+            ASTNode::Push { list, value } => {
+                let list_name = if let ASTNode::Identifier(name) = &list.node {
+                    name
+                } else {
+                    return Err("Push operation requires a list identifier.".to_string());
+                };
+    
+                let value = self.evaluate_expression(value)?;
+                self.symbol_table.push(list_name, value)?;
+            },
+            ASTNode::Pop { list } => {
+                let list_name = if let ASTNode::Identifier(name) = &list.node {
+                    name
+                } else {
+                    return Err("Pop operation requires a list identifier.".to_string());
+                };
+    
+                self.symbol_table.pop(list_name)?;
+            },
             _ => return Err(format!("Unsupported statement {:?}", ast.node)),
         }
         Ok(())
@@ -74,6 +93,30 @@ impl Interpreter {
                 let symbol = self.symbol_table.lookup(id)
                     .ok_or_else(|| format!("Variable '{}' not found.", id))?;
                 Ok(symbol.value.clone())
+            },
+            ASTNode::Push { list, value } => {
+                let list_value = self.evaluate_expression(list)?;
+                let value_value = self.evaluate_expression(value)?;
+    
+                if let SymbolValue::List(mut elements) = list_value {
+                    elements.push(value_value);
+                    Ok(SymbolValue::List(elements))
+                } else {
+                    Err("Push operation can only be performed on lists.".to_string())
+                }
+            },
+            ASTNode::Pop { list } => {
+                let list_value = self.evaluate_expression(list)?;
+    
+                if let SymbolValue::List(mut elements) = list_value {
+                    if let Some(value) = elements.pop() {
+                        Ok(value)
+                    } else {
+                        Err("Pop operation cannot be performed on an empty list.".to_string())
+                    }
+                } else {
+                    Err("Pop operation can only be performed on lists.".to_string())
+                }
             },
             ASTNode::BinaryOperation { left, right, operator } => {
                 let left_value = self.evaluate_expression(left)?;
@@ -167,7 +210,7 @@ impl Interpreter {
             ASTNode::Fetch { list, index } => {
                 let list_value = self.evaluate_expression(list)?;
                 let index_value = self.evaluate_expression(index)?;
-
+    
                 if let SymbolValue::List(elements) = list_value {
                     if let SymbolValue::Int(index) = index_value {
                         if index >= 0 && (index as usize) < elements.len() {
@@ -185,7 +228,6 @@ impl Interpreter {
             _ => Err(format!("Cannot evaluate expression node {:?}", expression.node)),
         }
     }
-
     fn infer_type(&self, node: &AST) -> Result<SymbolType, String> {
         match &node.node {
             ASTNode::Int(_) => Ok(SymbolType::Int),
@@ -208,6 +250,29 @@ impl Interpreter {
                     ))
                 }
             },
+            ASTNode::Push { list, value } => {
+                let list_type = self.infer_type(list)?;
+                let value_type = self.infer_type(value)?;
+    
+                if let SymbolType::List(element_type) = list_type {
+                    if *element_type == value_type {
+                        Ok(SymbolType::List(element_type))
+                    } else {
+                        Err(format!("Type mismatch: cannot push value of type {:?} to list of type {:?}.", value_type, element_type))
+                    }
+                } else {
+                    Err(format!("Type mismatch: push operation can only be performed on lists, found {:?}.", list_type))
+                }
+            },
+            ASTNode::Pop { list } => {
+                let list_type = self.infer_type(list)?;
+    
+                if let SymbolType::List(element_type) = list_type {
+                    Ok(*element_type)
+                } else {
+                    Err(format!("Type mismatch: pop operation can only be performed on lists, found {:?}.", list_type))
+                }
+            },
             ASTNode::Assignment { expression, .. } => self.infer_type(expression),
             ASTNode::Print(expression) => self.infer_type(expression),
             ASTNode::If { condition, then_branch, else_branch } => {
@@ -218,7 +283,7 @@ impl Interpreter {
                 } else {
                     then_type.clone() // Default to the `then_branch` type if `else_branch` is None
                 };
-
+    
                 if condition_type != SymbolType::Boolean {
                     Err(format!("Condition in 'If' statement must be of type Boolean."))
                 } else if then_type == else_type {
@@ -246,7 +311,7 @@ impl Interpreter {
             ASTNode::Fetch { list, index } => {
                 let list_type = self.infer_type(list)?;
                 let index_type = self.infer_type(index)?;
-
+    
                 if let SymbolType::List(element_type) = list_type {
                     if index_type == SymbolType::Int {
                         Ok(*element_type)

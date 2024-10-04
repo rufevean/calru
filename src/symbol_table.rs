@@ -47,13 +47,26 @@ impl SymbolTable {
         self.symbols.get(name)
     }
 
-    pub fn fetch(&self, list_name: &str, index: usize) -> Result<SymbolValue, String> {
-        if let Some(symbol) = self.symbols.get(list_name) {
-            if let SymbolValue::List(ref list) = symbol.value {
-                if index < list.len() {
-                    Ok(list[index].clone())
+    pub fn push(&mut self, list_name: &str, value: SymbolValue) -> Result<(), String> {
+        if let Some(symbol) = self.symbols.get_mut(list_name) {
+            if let SymbolValue::List(ref mut list) = symbol.value {
+                list.push(value);
+                Ok(())
+            } else {
+                Err(format!("Symbol '{}' is not a list", list_name))
+            }
+        } else {
+            Err(format!("Symbol '{}' not found", list_name))
+        }
+    }
+
+    pub fn pop(&mut self, list_name: &str) -> Result<SymbolValue, String> {
+        if let Some(symbol) = self.symbols.get_mut(list_name) {
+            if let SymbolValue::List(ref mut list) = symbol.value {
+                if let Some(value) = list.pop() {
+                    Ok(value)
                 } else {
-                    Err(format!("Index {} out of bounds for list '{}'", index, list_name))
+                    Err(format!("List '{}' is empty", list_name))
                 }
             } else {
                 Err(format!("Symbol '{}' is not a list", list_name))
@@ -64,15 +77,13 @@ impl SymbolTable {
     }
 
     pub fn print(&self) {
-        println!("Symbol Table:");
-        for (name, symbol) in &self.symbols {
-            let value_str = match &symbol.value {
+        for (_name, symbol) in &self.symbols {
+            let _value_str = match &symbol.value {
                 SymbolValue::Int(v) => v.to_string(),
                 SymbolValue::Float(v) => v.to_string(),
                 SymbolValue::Boolean(v) => v.to_string(),
                 SymbolValue::List(v) => format!("{:?}", v), // Handle list values
             };
-            println!("{}: {:?} = {}", name, symbol.symbol_type, value_str);
         }
     }
 }

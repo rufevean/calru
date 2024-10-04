@@ -1,38 +1,33 @@
+mod errors;
 mod lexer;
 mod models;
-mod errors;
 mod parser;
 mod symbol_table;
 //mod ir;
-mod interpreter;
 mod ast;
+mod interpreter;
 
-use crate::models::TokenType;
 use crate::parser::Parser;
-use crate::symbol_table::SymbolTable;
 //use crate::ir::generator::generate_ir;
 //use crate::ir::instruction::write_asm_file;
 use crate::interpreter::Interpreter;
-use crate::ast::AST; // Ensure correct import
 use std::fs;
 
 fn main() {
-    let input = fs::read_to_string("input/main.cru")
-        .expect("should have been able to read the file");
-    println!("{}", input);
+    let input =
+        fs::read_to_string("input/main.cru").expect("should have been able to read the file");
+    //    println!("{}", input);
 
     match lexer::lexer(&input) {
         Ok(tokens) => {
-            for token in &tokens {
-                println!("{:?}", token);
-            }
 
             let mut parser = Parser::new(tokens);
             match parser.parse_program() {
-                Ok((asts, symbol_table)) => { // Ensure parse_program returns both
+                Ok((asts, symbol_table)) => {
+                    // Ensure parse_program returns both
                     /*let mut all_instructions = Vec::new();
 
-                    for ast in &asts { 
+                    for ast in &asts {
                         let instructions = generate_ir(ast);
                         all_instructions.extend(instructions.clone());
 
@@ -40,11 +35,11 @@ fn main() {
                             println!("{:?}", instruction);
                         }
                     }
-                    
+
                     if let Err(e) = write_asm_file(&all_instructions, "output.asm") {
                         eprintln!("Failed to write assembly file: {}", e);
                     }
-                    */ 
+                    */
 
                     let mut interpreter = Interpreter::new(symbol_table);
 

@@ -57,7 +57,7 @@ pub fn write_asm_file(instructions: &[IRInstruction], filename: &str) -> std::io
     writeln!(file, "msg db 'Result: ', 0")?; 
     writeln!(file, "buffer db 20 dup(0)")?; 
 
-    for (var_name, asm_name) in &variables {
+    for (_var_name, asm_name) in &variables {
         writeln!(file, "{} dq 0", asm_name)?;
     }
 

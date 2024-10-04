@@ -26,6 +26,14 @@ pub enum ASTNode {
         list: Box<AST>,
         index: Box<AST>,
     },
+    Push {
+        list: Box<AST>,
+        value: Box<AST>,
+    },
+
+    Pop {
+        list: Box<AST>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -71,6 +79,12 @@ impl fmt::Display for ASTNode {
             }
             ASTNode::Fetch { list, index } => {
                 write!(f, "Fetch({}.fetch({}))", list, index)
+            }
+            ASTNode::Push { list, value } => {
+                write!(f, "Push({}.push({}))", list, value)
+            }
+            ASTNode::Pop { list } => {
+                write!(f, "Pop({}.pop())", list)
             }
         }
     }

@@ -2,6 +2,7 @@ Top-level statements
 Statement   → LetDecl
             | PrintStmt
             | IfStmt
+            | PopStmt
 
 Declaration of variables
 LetDecl     → 'let' Identifier ':' Type AssignExpr ';'
@@ -14,6 +15,12 @@ PrintStmt   → 'stdout' '(' Expression ')'
 
 If statement
 IfStmt      → 'if' Condition 'then' Statement ('else' Statement)? 'end' ';'
+
+Push statement
+PushStmt    → Identifier '.' 'push' '(' Expression ')' ';'
+
+Pop statement
+PopStmt     → Identifier '.' 'pop' '(' ')' ';'
 
 Conditions
 Condition   → Expression ('<' | '>' | '==' | '!=') Expression
@@ -34,4 +41,4 @@ List        → '[' (Expression (',' Expression)*)? ']'
 
 ListIndex   → Identifier '[' Expression ']'
 
-Fetch       → List'.' 'fetch' '(' Index ')'
+Fetch       → List '.' 'fetch' '(' Index ')'

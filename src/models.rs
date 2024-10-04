@@ -1,8 +1,9 @@
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub value: String,
-    pub position: Position,
+    pub position : Position,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -48,7 +49,9 @@ pub enum TokenType {
     ListFloatType, // Add this line
     ListBoolType,
     Dot,           // Add dot for method calls
-    Fetch          // Add fetch for list indexing
+    Fetch,
+    Push,      
+    Pop,    
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
