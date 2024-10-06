@@ -30,10 +30,13 @@ pub enum ASTNode {
         list: Box<AST>,
         value: Box<AST>,
     },
-
     Pop {
         list: Box<AST>,
     },
+    Loop {
+        body: Box<AST>,
+    },
+    Break,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -85,6 +88,12 @@ impl fmt::Display for ASTNode {
             }
             ASTNode::Pop { list } => {
                 write!(f, "Pop({}.pop())", list)
+            }
+            ASTNode::Loop { body } => {
+                write!(f, "Loop({})", body)
+            }
+            ASTNode::Break => {
+                write!(f, "Break")
             }
         }
     }

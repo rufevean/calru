@@ -27,3 +27,13 @@ stdout(result)
 
 
 //furthur , we can add strings into print statements 
+
+let i :int := 0;
+loop{
+    i = i + 1;
+
+    if (i == 10) then
+        break;
+}
+
+stdout(i);

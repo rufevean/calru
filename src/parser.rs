@@ -40,16 +40,39 @@ impl Parser {
 
         Ok((asts, self.symbol_table.clone()))
     }
-  
+    pub fn parse_assignment(&mut self, variable: String) -> Result<AST, String> {
+        if !self.current_token_is(TokenType::Assign) {
+            return Err(format!("Expected ':=' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume ':='
+    
+        let expression = self.parse_expression()?;
+    
+        if !self.current_token_is(TokenType::Termination) {
+            return Err(format!("Expected ';' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume ';'
+    
+        Ok(AST::new(ASTNode::Assignment {
+            variable,
+            expression: Box::new(expression),
+        }))
+    }
     pub fn parse_statement(&mut self) -> Result<AST, String> {
         match self.current_token {
             Some(ref token) if token.token_type == TokenType::Let => self.parse_let_decl(),
             Some(ref token) if token.token_type == TokenType::Print => self.parse_print(),
             Some(ref token) if token.token_type == TokenType::If => self.parse_if_statement(),
+            Some(ref token) if token.token_type == TokenType::Loop => self.parse_loop(),
+            Some(ref token) if token.token_type == TokenType::Break => self.parse_break(),
             Some(ref token) if token.token_type == TokenType::Identifier => {
                 let identifier = token.value.clone();
                 self.advance();
-                if self.current_token_is(TokenType::Dot) {
+                if self.current_token_is(TokenType::Assign) {
+                    self.parse_assignment(identifier)
+                } else if self.current_token_is(TokenType::Dot) {
                     self.advance();
                     if self.current_token_is(TokenType::Push) {
                         self.parse_push(identifier)
@@ -63,18 +86,17 @@ impl Parser {
                     }
                 } else {
                     Err(format!(
-                        "Unexpected token {:?} at position {:?}. Expected '.' for method call.",
+                        "Unexpected token {:?} at position {:?}. Expected ':=' for assignment or '.' for method call.",
                         self.current_token, self.position
                     ))
                 }
             }
             _ => Err(format!(
-                "Unexpected token {:?} at position {:?}. Expected 'let', 'stdout', 'if', or an identifier.",
+                "Unexpected token {:?} at position {:?}. Expected 'let', 'stdout', 'if', 'loop', 'break', or an identifier.",
                 self.current_token, self.position
             )),
         }
     }
-
     pub fn parse_push(&mut self, list_name: String) -> Result<AST, String> {
         if !self.current_token_is(TokenType::Push) {
             return Err(format!("Expected 'push' at position {:?}. Found {:?}", self.position, self.current_token));
@@ -105,6 +127,43 @@ impl Parser {
         Ok(AST::new(ASTNode::Push {
             list: Box::new(AST::new(ASTNode::Identifier(list_name))),
             value: Box::new(value),
+        }))
+    }
+    pub fn parse_break(&mut self) -> Result<AST, String> {
+        if !self.current_token_is(TokenType::Break) {
+            return Err(format!("Expected 'break' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume 'break'
+    
+        if !self.current_token_is(TokenType::Termination) {
+            return Err(format!("Expected ';' after 'break' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume ';'
+    
+        Ok(AST::new(ASTNode::Break))
+    }
+    pub fn parse_loop(&mut self) -> Result<AST, String> {
+        if !self.current_token_is(TokenType::Loop) {
+            return Err(format!("Expected 'loop' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume 'loop'
+        if !self.current_token_is(TokenType::LeftBrace) {
+            return Err(format!("Expected '{{' after 'loop' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+        self.advance(); // Consume '{'
+        let body_statements = self.parse_statement()?; // Assuming parse_statements parses a sequence of statements
+    
+        if !self.current_token_is(TokenType::End) {
+            return Err(format!("Expected 'end' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume 'end'
+    
+        Ok(AST::new(ASTNode::Loop {
+            body: Box::new(body_statements),
         }))
     }
     pub fn parse_if_statement(&mut self) -> Result<AST, String> {

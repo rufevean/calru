@@ -52,6 +52,10 @@ pub enum TokenType {
     Fetch,
     Push,      
     Pop,    
+    Loop,
+    Break, 
+    LeftBrace,
+    RightBrace,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

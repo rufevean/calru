@@ -56,7 +56,10 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
                         TokenType::Number
                     },
                     num,
-                    Position { line, column: start_column },
+                    Position {
+                        line,
+                        column: start_column,
+                    },
                 )
             }
 
@@ -82,87 +85,125 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
                     "int" => TokenType::IntType,
                     "float" => TokenType::FloatType,
                     "bool" => TokenType::BoolType,
-                    "fetch" => TokenType::Fetch, 
+                    "fetch" => TokenType::Fetch,
                     "push" => TokenType::Push,
                     "pop" => TokenType::Pop,
+                    "loop" => TokenType::Loop,
+                    "break" => TokenType::Break,
                     _ => TokenType::Identifier,
                 };
                 Token::new(
                     token_type,
                     ident,
-                    Position { line, column: start_column },
+                    Position {
+                        line,
+                        column: start_column,
+                    },
                 )
             }
+            '{' => {
+                // Add this block
+                let token = Token::new(
+                    TokenType::LeftBrace,
+                    ch.to_string(),
+                    Position { line, column },
+                );
+                chars.next();
+                column += 1;
+                token
+            }
 
-':' => {
-    let start_column = column;
-    chars.next();
-    column += 1;
-    if chars.peek() == Some(&'=') {
-        chars.next();
-        column += 1;
-        Token::new(
-            TokenType::Assign,
-            ":=".to_string(),
-            Position { line, column: start_column },
-        )
-    } else if chars.peek() == Some(&'[') {
-        chars.next();
-        column += 1;
-        let mut type_str = String::new();
-        while let Some(&ch) = chars.peek() {
-            if ch.is_alphabetic() {
-                type_str.push(chars.next().unwrap());
+            '}' => {
+                // Add this block
+                let token = Token::new(
+                    TokenType::RightBrace,
+                    ch.to_string(),
+                    Position { line, column },
+                );
+                chars.next();
                 column += 1;
-            } else {
-                break;
+                token
             }
-        }
-        if chars.peek() == Some(&']') {
-            chars.next();
-            column += 1;
-            let token_type = match type_str.as_str() {
-                "int" => TokenType::ListIntType,
-                "float" => TokenType::ListFloatType,
-                "bool" => TokenType::ListBoolType,
-                _ => TokenType::Unknown,
-            };
-            Token::new(
-                token_type,
-                format!(":[{}]", type_str),
-                Position { line, column: start_column },
-            )
-        } else {
-            Token::new(
-                TokenType::Unknown,
-                format!(":[{}]", type_str),
-                Position { line, column: start_column },
-            )
-        }
-    } else {
-        let mut type_str = String::new();
-        while let Some(&ch) = chars.peek() {
-            if ch.is_alphabetic() {
-                type_str.push(chars.next().unwrap());
+            ':' => {
+                let start_column = column;
+                chars.next();
                 column += 1;
-            } else {
-                break;
+                if chars.peek() == Some(&'=') {
+                    chars.next();
+                    column += 1;
+                    Token::new(
+                        TokenType::Assign,
+                        ":=".to_string(),
+                        Position {
+                            line,
+                            column: start_column,
+                        },
+                    )
+                } else if chars.peek() == Some(&'[') {
+                    chars.next();
+                    column += 1;
+                    let mut type_str = String::new();
+                    while let Some(&ch) = chars.peek() {
+                        if ch.is_alphabetic() {
+                            type_str.push(chars.next().unwrap());
+                            column += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    if chars.peek() == Some(&']') {
+                        chars.next();
+                        column += 1;
+                        let token_type = match type_str.as_str() {
+                            "int" => TokenType::ListIntType,
+                            "float" => TokenType::ListFloatType,
+                            "bool" => TokenType::ListBoolType,
+                            _ => TokenType::Unknown,
+                        };
+                        Token::new(
+                            token_type,
+                            format!(":[{}]", type_str),
+                            Position {
+                                line,
+                                column: start_column,
+                            },
+                        )
+                    } else {
+                        Token::new(
+                            TokenType::Unknown,
+                            format!(":[{}]", type_str),
+                            Position {
+                                line,
+                                column: start_column,
+                            },
+                        )
+                    }
+                } else {
+                    let mut type_str = String::new();
+                    while let Some(&ch) = chars.peek() {
+                        if ch.is_alphabetic() {
+                            type_str.push(chars.next().unwrap());
+                            column += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    let token_type = match type_str.as_str() {
+                        "int" => TokenType::IntType,
+                        "float" => TokenType::FloatType,
+                        "bool" => TokenType::BoolType,
+                        _ => TokenType::Unknown,
+                    };
+                    Token::new(
+                        token_type,
+                        format!(":{}", type_str),
+                        Position {
+                            line,
+                            column: start_column,
+                        },
+                    )
+                }
             }
-        }
-        let token_type = match type_str.as_str() {
-            "int" => TokenType::IntType,
-            "float" => TokenType::FloatType,
-            "bool" => TokenType::BoolType,
-            _ => TokenType::Unknown,
-        };
-        Token::new(
-            token_type,
-            format!(":{}", type_str),
-            Position { line, column: start_column },
-        )
-    }
-}
-            
 
             '+' | '-' | '*' | '/' => {
                 let token = Token::new(
@@ -218,13 +259,19 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
                     Token::new(
                         TokenType::GreaterThanOrEqual,
                         ">=".to_string(),
-                        Position { line, column: start_column },
+                        Position {
+                            line,
+                            column: start_column,
+                        },
                     )
                 } else {
                     Token::new(
                         TokenType::GreaterThan,
                         ">".to_string(),
-                        Position { line, column: start_column },
+                        Position {
+                            line,
+                            column: start_column,
+                        },
                     )
                 };
                 token
@@ -240,13 +287,19 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
                     Token::new(
                         TokenType::LessThanOrEqual,
                         "<=".to_string(),
-                        Position { line, column: start_column },
+                        Position {
+                            line,
+                            column: start_column,
+                        },
                     )
                 } else {
                     Token::new(
                         TokenType::LessThan,
                         "<".to_string(),
-                        Position { line, column: start_column },
+                        Position {
+                            line,
+                            column: start_column,
+                        },
                     )
                 };
                 token
@@ -262,13 +315,19 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
                     Token::new(
                         TokenType::Equal,
                         "==".to_string(),
-                        Position { line, column: start_column },
+                        Position {
+                            line,
+                            column: start_column,
+                        },
                     )
                 } else {
                     Token::new(
                         TokenType::Operator,
                         "=".to_string(),
-                        Position { line, column: start_column },
+                        Position {
+                            line,
+                            column: start_column,
+                        },
                     )
                 }
             }
@@ -283,13 +342,19 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
                     Token::new(
                         TokenType::NotEqual,
                         "!=".to_string(),
-                        Position { line, column: start_column },
+                        Position {
+                            line,
+                            column: start_column,
+                        },
                     )
                 } else {
                     Token::new(
                         TokenType::Operator,
                         "!".to_string(),
-                        Position { line, column: start_column },
+                        Position {
+                            line,
+                            column: start_column,
+                        },
                     )
                 }
             }
@@ -304,13 +369,19 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
                     Token::new(
                         TokenType::And,
                         "&&".to_string(),
-                        Position { line, column: start_column },
+                        Position {
+                            line,
+                            column: start_column,
+                        },
                     )
                 } else {
                     Token::new(
                         TokenType::Operator,
                         "&".to_string(),
-                        Position { line, column: start_column },
+                        Position {
+                            line,
+                            column: start_column,
+                        },
                     )
                 }
             }
@@ -325,13 +396,19 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
                     Token::new(
                         TokenType::Or,
                         "||".to_string(),
-                        Position { line, column: start_column },
+                        Position {
+                            line,
+                            column: start_column,
+                        },
                     )
                 } else {
                     Token::new(
                         TokenType::Operator,
                         "|".to_string(),
-                        Position { line, column: start_column },
+                        Position {
+                            line,
+                            column: start_column,
+                        },
                     )
                 }
             }
@@ -359,22 +436,14 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
             }
 
             ',' => {
-                let token = Token::new(
-                    TokenType::Comma,
-                    ch.to_string(),
-                    Position { line, column },
-                );
+                let token = Token::new(TokenType::Comma, ch.to_string(), Position { line, column });
                 chars.next();
                 column += 1;
                 token
             }
 
             '.' => {
-                let token = Token::new(
-                    TokenType::Dot,
-                    ch.to_string(),
-                    Position { line, column },
-                );
+                let token = Token::new(TokenType::Dot, ch.to_string(), Position { line, column });
                 chars.next();
                 column += 1;
                 token

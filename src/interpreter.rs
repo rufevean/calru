@@ -79,6 +79,16 @@ impl Interpreter {
     
                 self.symbol_table.pop(list_name)?;
             },
+            ASTNode::Loop { body } => {
+                loop {
+                    match self.execute_statement(body) {
+                        Ok(_) => continue,
+                        Err(e) if e == "break" => break,
+                        Err(e) => return Err(e),
+                    }
+                }
+            },
+            ASTNode::Break => return Err("break".to_string()),
             _ => return Err(format!("Unsupported statement {:?}", ast.node)),
         }
         Ok(())
@@ -321,7 +331,14 @@ impl Interpreter {
                 } else {
                     Err("Fetch operation can only be performed on lists.".to_string())
                 }
-            }
+            },
+            ASTNode::Loop { body } => {
+                // Infer the type of the loop body
+                self.infer_type(body)?;
+                Ok(SymbolType::Void) // Assuming loop does not return a value
+            },
+            ASTNode::Break => Ok(SymbolType::Void), // Break does not have a type
+            _ => Err(format!("Unsupported node type {:?}", node.node)),
         }
     }
 }
@@ -332,6 +349,7 @@ impl fmt::Display for SymbolValue {
             SymbolValue::Int(value) => write!(f, "{}", value),
             SymbolValue::Float(value) => write!(f, "{}", value),
             SymbolValue::Boolean(value) => write!(f, "{}", value),
+            SymbolValue::Void => write!(f, "void"),
             SymbolValue::List(values) => {
                 let values_str: Vec<String> = values.iter().map(|v| v.to_string()).collect();
                 write!(f, "[{}]", values_str.join(", "))

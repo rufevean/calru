@@ -1,9 +1,9 @@
-let product :[float] := [12.0, 11.0];
-let ff :float := product.fetch(1);
-product.push(2.0);
-product.push(7.0);
-product.push(1.0);
-stdout(product);
-product.pop();
-stdout(product);
-stdout(ff);
+let i :int := 0;
+loop{
+    i := i + 1;
+    if (i == 10) then
+        break;
+    end
+};
+
+stdout(i);

@@ -6,6 +6,7 @@ pub enum SymbolType {
     Float,
     Boolean,
     List(Box<SymbolType>), // Add list type
+    Void, // Add void type
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -14,6 +15,7 @@ pub enum SymbolValue {
     Float(f64),
     Boolean(bool),
     List(Vec<SymbolValue>), // Add list value
+    Void, // Add void value
 }
 
 #[derive(Debug, Clone)]
@@ -24,66 +26,77 @@ pub struct Symbol {
 
 #[derive(Debug, Clone)]
 pub struct SymbolTable {
-    symbols: HashMap<String, Symbol>,
+    scopes: Vec<HashMap<String, Symbol>>,
 }
 
 impl SymbolTable {
     pub fn new() -> Self {
         SymbolTable {
-            symbols: HashMap::new(),
+            scopes: vec![HashMap::new()],
         }
     }
 
     pub fn insert(&mut self, name: String, symbol_type: SymbolType, value: SymbolValue) -> Result<(), String> {
-        if self.symbols.contains_key(&name) {
+        let current_scope = self.scopes.last_mut().unwrap();
+        if current_scope.contains_key(&name) {
             Err(format!("Symbol '{}' already declared", name))
         } else {
-            self.symbols.insert(name, Symbol { symbol_type, value });
+            current_scope.insert(name, Symbol { symbol_type, value });
             Ok(())
         }
     }
 
     pub fn lookup(&self, name: &str) -> Option<&Symbol> {
-        self.symbols.get(name)
+        for scope in self.scopes.iter().rev() {
+            if let Some(symbol) = scope.get(name) {
+                return Some(symbol);
+            }
+        }
+        None
     }
 
     pub fn push(&mut self, list_name: &str, value: SymbolValue) -> Result<(), String> {
-        if let Some(symbol) = self.symbols.get_mut(list_name) {
-            if let SymbolValue::List(ref mut list) = symbol.value {
-                list.push(value);
-                Ok(())
-            } else {
-                Err(format!("Symbol '{}' is not a list", list_name))
+        for scope in self.scopes.iter_mut().rev() {
+            if let Some(symbol) = scope.get_mut(list_name) {
+                if let SymbolValue::List(ref mut list) = symbol.value {
+                    list.push(value);
+                    return Ok(());
+                } else {
+                    return Err(format!("Symbol '{}' is not a list", list_name));
+                }
             }
-        } else {
-            Err(format!("Symbol '{}' not found", list_name))
         }
+        Err(format!("Symbol '{}' not found", list_name))
     }
 
     pub fn pop(&mut self, list_name: &str) -> Result<SymbolValue, String> {
-        if let Some(symbol) = self.symbols.get_mut(list_name) {
-            if let SymbolValue::List(ref mut list) = symbol.value {
-                if let Some(value) = list.pop() {
-                    Ok(value)
+        for scope in self.scopes.iter_mut().rev() {
+            if let Some(symbol) = scope.get_mut(list_name) {
+                if let SymbolValue::List(ref mut list) = symbol.value {
+                    if let Some(value) = list.pop() {
+                        return Ok(value);
+                    } else {
+                        return Err(format!("List '{}' is empty", list_name));
+                    }
                 } else {
-                    Err(format!("List '{}' is empty", list_name))
+                    return Err(format!("Symbol '{}' is not a list", list_name));
                 }
-            } else {
-                Err(format!("Symbol '{}' is not a list", list_name))
             }
-        } else {
-            Err(format!("Symbol '{}' not found", list_name))
         }
+        Err(format!("Symbol '{}' not found", list_name))
+    }
+
+    pub fn enter_scope(&mut self) {
+        self.scopes.push(HashMap::new());
+    }
+
+    pub fn exit_scope(&mut self) {
+        self.scopes.pop();
     }
 
     pub fn print(&self) {
-        for (_name, symbol) in &self.symbols {
-            let _value_str = match &symbol.value {
-                SymbolValue::Int(v) => v.to_string(),
-                SymbolValue::Float(v) => v.to_string(),
-                SymbolValue::Boolean(v) => v.to_string(),
-                SymbolValue::List(v) => format!("{:?}", v), // Handle list values
-            };
+        for (i, scope) in self.scopes.iter().enumerate() {
+            println!("Scope {}: {:?}", i, scope);
         }
     }
 }
