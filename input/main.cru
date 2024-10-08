@@ -4,6 +4,5 @@ loop{
     if (i == 10) then
         break;
     end
-};
-
+}
 stdout(i);

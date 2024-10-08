@@ -19,6 +19,10 @@ Top-level statements
 Statement   → LetDecl
             | PrintStmt
             | IfStmt
+            | PopStmt
+            | PushStmt
+            | LoopStmt
+            | BreakStmt
 
 Declaration of variables
 LetDecl     → 'let' Identifier ':' Type AssignExpr ';'
@@ -31,6 +35,18 @@ PrintStmt   → 'stdout' '(' Expression ')'
 
 If statement
 IfStmt      → 'if' Condition 'then' Statement ('else' Statement)? 'end' ';'
+
+Push statement
+PushStmt    → Identifier '.' 'push' '(' Expression ')' ';'
+
+Pop statement
+PopStmt     → Identifier '.' 'pop' '(' ')' ';'
+
+Loop statement
+LoopStmt    → 'loop' Statement 'end' ';'
+
+Break statement
+BreakStmt   → 'break' ';'
 
 Conditions
 Condition   → Expression ('<' | '>' | '==' | '!=') Expression
@@ -50,23 +66,16 @@ Factor      → Number
 List        → '[' (Expression (',' Expression)*)? ']'
 
 
-Push statement
-PushStmt    → Identifier '.' 'push' '(' Expression ')' ';'
-
-Pop statement
-PopStmt     → Identifier '.' 'pop' '(' ')' ';'
-
-
-Fetch       → List'.' 'fetch' '(' Index ')'
+Fetch       → List '.' 'fetch' '(' Index ')'
  ```
 
 
 ## Latest Update
-- Add push and pop operations for lists. 
+- Add Loop and break statement
 
 ## Next Steps
 
-- Added traversal
+- Add len method for Lists.
 
 ## Language Features
 
@@ -75,6 +84,8 @@ Fetch       → List'.' 'fetch' '(' Index ')'
 -   **Statements**: Variable declarations with type, assignments, and print statements.
 -   **Control Flow**: Basic `if` statements with conditions.
 -   **Error Handling**: Comprehensive error reporting for syntax and semantic issues.
+-   **List Operations**: Push and pop operations for lists.
+-   **Looping**: Basic loop functionality with a `loop` statement.
 
 ## Usage
 
@@ -98,20 +109,14 @@ cargo test
 ```
 ## Example
 ```
-let num1 :float := 2.5;
-let num2 :float := 4.0;
-let num3 :float := 3.0;
-let num4 :float := 1.5;
-let product :float := num1 * num2 * num3 * num4;
-let list1 :[float] := [1.0, 2.0, 3.0, 4.0]; 
-stdout(list1);
-stdout(product);
-
-if (product < 10.0) then
-    stdout(10);
-else 
-    stdout(1);
-end;
+let i :int := 0;
+loop{
+    i := i + 1;
+    if (i == 10) then
+        break;
+    end
+}
+stdout(i);
 ```
 ### Explanation:
 

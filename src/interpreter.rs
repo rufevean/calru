@@ -34,7 +34,7 @@ impl Interpreter {
                     ));
                 }
     
-                self.symbol_table.insert(variable.clone(), symbol_type, value)?;
+                self.symbol_table.update(variable.clone(), value)?;
             },
             ASTNode::Print(expression) => {
                 let value = self.evaluate_expression(expression)?;
@@ -45,9 +45,7 @@ impl Interpreter {
                 println!("Boolean value: {}", b);
             },
             ASTNode::If { condition, then_branch, else_branch } => {
-                // Handle If statements (needs further implementation for actual branching logic)
                 let condition_value = self.evaluate_expression(condition)?;
-                // For simplicity, assuming `condition_value` is a boolean here.
                 if let SymbolValue::Boolean(true) = condition_value {
                     self.execute_statement(then_branch)?;
                 } else if let Some(else_branch) = else_branch {
@@ -55,7 +53,6 @@ impl Interpreter {
                 }
             },
             ASTNode::List(elements) => {
-                // Handle List nodes if needed
                 for element in elements {
                     self.execute_statement(element)?;
                 }
@@ -81,10 +78,20 @@ impl Interpreter {
             },
             ASTNode::Loop { body } => {
                 loop {
+                    self.symbol_table.enter_scope(); 
                     match self.execute_statement(body) {
-                        Ok(_) => continue,
-                        Err(e) if e == "break" => break,
-                        Err(e) => return Err(e),
+                        Ok(_) => {
+                            self.symbol_table.exit_scope(); 
+                            continue;
+                        },
+                        Err(e) if e == "break" => {
+                            self.symbol_table.exit_scope(); 
+                            break;
+                        },
+                        Err(e) => {
+                            self.symbol_table.exit_scope(); 
+                            return Err(e);
+                        },
                     }
                 }
             },
@@ -93,7 +100,6 @@ impl Interpreter {
         }
         Ok(())
     }
-
     fn evaluate_expression(&self, expression: &AST) -> Result<SymbolValue, String> {
         match &expression.node {
             ASTNode::Int(value) => Ok(SymbolValue::Int(*value)),
@@ -333,11 +339,10 @@ impl Interpreter {
                 }
             },
             ASTNode::Loop { body } => {
-                // Infer the type of the loop body
                 self.infer_type(body)?;
-                Ok(SymbolType::Void) // Assuming loop does not return a value
+                Ok(SymbolType::Void) 
             },
-            ASTNode::Break => Ok(SymbolType::Void), // Break does not have a type
+            ASTNode::Break => Ok(SymbolType::Void), 
             _ => Err(format!("Unsupported node type {:?}", node.node)),
         }
     }
@@ -349,7 +354,6 @@ impl fmt::Display for SymbolValue {
             SymbolValue::Int(value) => write!(f, "{}", value),
             SymbolValue::Float(value) => write!(f, "{}", value),
             SymbolValue::Boolean(value) => write!(f, "{}", value),
-            SymbolValue::Void => write!(f, "void"),
             SymbolValue::List(values) => {
                 let values_str: Vec<String> = values.iter().map(|v| v.to_string()).collect();
                 write!(f, "[{}]", values_str.join(", "))

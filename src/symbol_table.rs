@@ -5,8 +5,8 @@ pub enum SymbolType {
     Int,
     Float,
     Boolean,
-    List(Box<SymbolType>), // Add list type
-    Void, // Add void type
+    List(Box<SymbolType>), 
+    Void, 
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -14,8 +14,7 @@ pub enum SymbolValue {
     Int(i64),
     Float(f64),
     Boolean(bool),
-    List(Vec<SymbolValue>), // Add list value
-    Void, // Add void value
+    List(Vec<SymbolValue>),
 }
 
 #[derive(Debug, Clone)]
@@ -46,6 +45,17 @@ impl SymbolTable {
         }
     }
 
+
+
+    pub fn update(&mut self, name: String, value: SymbolValue) -> Result<(), String> {
+        for scope in self.scopes.iter_mut().rev() {
+            if let Some(symbol) = scope.get_mut(&name) {
+                symbol.value = value;
+                return Ok(());
+            }
+        }
+        Err(format!("Variable '{}' not found.", name))
+    }
     pub fn lookup(&self, name: &str) -> Option<&Symbol> {
         for scope in self.scopes.iter().rev() {
             if let Some(symbol) = scope.get(name) {
@@ -85,6 +95,7 @@ impl SymbolTable {
         }
         Err(format!("Symbol '{}' not found", list_name))
     }
+
 
     pub fn enter_scope(&mut self) {
         self.scopes.push(HashMap::new());

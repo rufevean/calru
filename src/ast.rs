@@ -1,5 +1,4 @@
 use std::fmt;
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum ASTNode {
     Int(i64),
@@ -57,19 +56,12 @@ impl fmt::Display for AST {
 }
 
 impl fmt::Display for ASTNode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ASTNode::Int(n) => write!(f, "Int({})", n),
-            ASTNode::Float(n) => write!(f, "Float({})", n),
-            ASTNode::Boolean(b) => write!(f, "Boolean({})", b),
+            ASTNode::Int(value) => write!(f, "Int({})", value),
+            ASTNode::Float(value) => write!(f, "Float({})", value),
+            ASTNode::Boolean(value) => write!(f, "Boolean({})",value),
             ASTNode::Identifier(id) => write!(f, "Identifier({})", id),
-            ASTNode::List(elements) => {
-                let elements_str: Vec<String> = elements.iter().map(|e| e.to_string()).collect();
-                write!(f, "List([{}])", elements_str.join(", "))
-            }
-            ASTNode::BinaryOperation { operator, left, right } => {
-                write!(f, "BinaryOperation({} {} {})", left, operator, right)
-            }
             ASTNode::Assignment { variable, expression } => {
                 write!(f, "Assignment({} = {})", variable, expression)
             }
@@ -94,6 +86,16 @@ impl fmt::Display for ASTNode {
             }
             ASTNode::Break => {
                 write!(f, "Break")
+            }
+            ASTNode::List(elements) => {
+                let elements_str = elements.iter()
+                    .map(|e| e.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                write!(f, "List([{}])", elements_str)
+            }
+            ASTNode::BinaryOperation { left, right, operator } => {
+                write!(f, "BinaryOperation({} {} {})", left, operator, right)
             }
         }
     }

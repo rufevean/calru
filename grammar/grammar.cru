@@ -3,6 +3,9 @@ Statement   → LetDecl
             | PrintStmt
             | IfStmt
             | PopStmt
+            | PushStmt
+            | LoopStmt
+            | BreakStmt
 
 Declaration of variables
 LetDecl     → 'let' Identifier ':' Type AssignExpr ';'
@@ -21,6 +24,12 @@ PushStmt    → Identifier '.' 'push' '(' Expression ')' ';'
 
 Pop statement
 PopStmt     → Identifier '.' 'pop' '(' ')' ';'
+
+Loop statement
+LoopStmt    → 'loop' Statement 'end' ';'
+
+Break statement
+BreakStmt   → 'break' ';'
 
 Conditions
 Condition   → Expression ('<' | '>' | '==' | '!=') Expression

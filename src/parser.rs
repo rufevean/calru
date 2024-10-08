@@ -150,20 +150,27 @@ impl Parser {
         }
     
         self.advance(); // Consume 'loop'
+    
         if !self.current_token_is(TokenType::LeftBrace) {
             return Err(format!("Expected '{{' after 'loop' at position {:?}. Found {:?}", self.position, self.current_token));
         }
-        self.advance(); // Consume '{'
-        let body_statements = self.parse_statement()?; // Assuming parse_statements parses a sequence of statements
     
-        if !self.current_token_is(TokenType::End) {
-            return Err(format!("Expected 'end' at position {:?}. Found {:?}", self.position, self.current_token));
+        self.advance(); // Consume '{'
+    
+        let mut body_statements = Vec::new();
+        while !self.current_token_is(TokenType::RightBrace) && !self.current_token_is(TokenType::EOF) {
+            let statement = self.parse_statement()?;
+            body_statements.push(statement);
         }
     
-        self.advance(); // Consume 'end'
+        if !self.current_token_is(TokenType::RightBrace) {
+            return Err(format!("Expected '}}' at position {:?}. Found {:?}", self.position, self.current_token));
+        }
+    
+        self.advance(); // Consume '}'
     
         Ok(AST::new(ASTNode::Loop {
-            body: Box::new(body_statements),
+            body: Box::new(AST::new(ASTNode::List(body_statements))),
         }))
     }
     pub fn parse_if_statement(&mut self) -> Result<AST, String> {
@@ -171,13 +178,13 @@ impl Parser {
             return Err(format!("Expected 'if' at position {:?}. Found {:?}", self.position, self.current_token));
         }
     
-        self.advance();
+        self.advance(); // Consume 'if'
     
         if !self.current_token_is(TokenType::LeftParen) {
             return Err(format!("Expected '(' after 'if' at position {:?}. Found {:?}", self.position, self.current_token));
         }
     
-        self.advance(); 
+        self.advance(); // Consume '('
     
         let condition = self.parse_expression()?;
     
@@ -185,23 +192,19 @@ impl Parser {
             return Err(format!("Expected ')' after condition at position {:?}. Found {:?}", self.position, self.current_token));
         }
     
-        self.advance(); 
-    
-        if !matches!(self.infer_type(&condition)?, SymbolType::Boolean) {
-            return Err(format!("Expected boolean condition at position {:?}. Found {:?}", self.position, condition));
-        }
+        self.advance(); // Consume ')'
     
         if !self.current_token_is(TokenType::Then) {
             return Err(format!("Expected 'then' after 'if' condition at position {:?}. Found {:?}", self.position, self.current_token));
         }
     
-        self.advance(); 
+        self.advance(); // Consume 'then'
     
         let then_branch = self.parse_statement()?;
     
         let mut else_branch = None;
         if self.current_token_is(TokenType::Else) {
-            self.advance();
+            self.advance(); // Consume 'else'
             else_branch = Some(self.parse_statement()?);
         }
     
@@ -209,11 +212,7 @@ impl Parser {
             return Err(format!("Expected 'end' at position {:?}. Found {:?}", self.position, self.current_token));
         }
     
-        self.advance(); 
-    
-        if self.current_token_is(TokenType::Termination) {
-            self.advance(); 
-        }
+        self.advance(); // Consume 'end'
     
         Ok(AST::new(ASTNode::If {
             condition: Box::new(condition),

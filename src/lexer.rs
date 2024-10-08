@@ -114,7 +114,6 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
             }
 
             '}' => {
-                // Add this block
                 let token = Token::new(
                     TokenType::RightBrace,
                     ch.to_string(),
