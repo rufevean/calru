@@ -78,9 +78,21 @@ impl Parser {
                         self.parse_push(identifier)
                     } else if self.current_token_is(TokenType::Pop) {
                         self.parse_pop(identifier)
+                    } else if self.current_token_is(TokenType::Identifier) {
+                        let method_name = self.current_token.as_ref().unwrap().value.clone();
+                        self.advance(); // Consume the method name
+
+                        match method_name.as_str() {
+                            "fetch" => self.parse_fetch(AST::new(ASTNode::Identifier(identifier))),
+                            "len" => self.parse_len(AST::new(ASTNode::Identifier(identifier))),
+                            _ => Err(format!(
+                                "Unexpected method '{}' at position {:?}. Expected 'fetch' or 'len'.",
+                                method_name, self.position
+                            )),
+                        }
                     } else {
                         Err(format!(
-                            "Unexpected token {:?} at position {:?}. Expected 'push' or 'pop'.",
+                            "Unexpected token {:?} at position {:?}. Expected 'push', 'pop', or a method name.",
                             self.current_token, self.position
                         ))
                     }
@@ -97,6 +109,29 @@ impl Parser {
             )),
         }
     }
+    fn parse_len(&mut self, list_expression: AST) -> Result<AST, String> {
+        if self.current_token_is(TokenType::LeftParen) {
+            self.advance(); // Consume '('
+
+            if self.current_token_is(TokenType::RightParen) {
+                self.advance(); // Consume ')'
+                return Ok(AST::new(ASTNode::Len {
+                    list: Box::new(list_expression),
+                }));
+            } else {
+                return Err(format!(
+                    "Expected ')' after 'len' at position {:?}. Found {:?}",
+                    self.position, self.current_token
+                ));
+            }
+        } else {
+            return Err(format!(
+                "Expected '(' after 'len' at position {:?}. Found {:?}",
+                self.position, self.current_token
+            ));
+        }
+    }
+
     pub fn parse_push(&mut self, list_name: String) -> Result<AST, String> {
         if !self.current_token_is(TokenType::Push) {
             return Err(format!("Expected 'push' at position {:?}. Found {:?}", self.position, self.current_token));
@@ -307,7 +342,32 @@ impl Parser {
     
         // Check for fetch method call
         if self.current_token_is(TokenType::Dot) {
-            expression = self.parse_fetch(expression)?;
+            self.advance(); // Consume the dot
+        
+            if self.current_token_is(TokenType::Identifier) {
+                let method_name = self.current_token.clone().unwrap().value.clone();
+                self.advance(); // Consume the method name
+        
+                match method_name.as_str() {
+                    "fetch" => {
+                        expression = self.parse_fetch(expression)?;
+                    },
+                    "len" => {
+                        expression = self.parse_len(expression)?;
+                    },
+                    _ => {
+                        return Err(format!(
+                            "Unknown method '{}' at position {:?}.",
+                            method_name, self.position
+                        ));
+                    }
+                }
+            } else {
+                return Err(format!(
+                    "Expected method name after '.' at position {:?}. Found {:?}",
+                    self.position, self.current_token
+                ));
+            }
         }
     
         if !self.current_token_is(TokenType::Termination) {
@@ -373,7 +433,7 @@ impl Parser {
     pub fn parse_expression(&mut self) -> Result<AST, String> {
         let mut left = self.parse_term()?;
         let mut left_type = self.infer_type(&left)?;
-    
+
         while self.current_token_is(TokenType::Operator)
             || self.current_token_is(TokenType::LessThan)
             || self.current_token_is(TokenType::GreaterThan)
@@ -384,10 +444,9 @@ impl Parser {
         {
             let operator = self.current_token.as_ref().unwrap().value.clone();
             self.advance();
-    
+
             let right = self.parse_term()?;
             let right_type = self.infer_type(&right)?;
-    
 
             if operator == "==" || operator == "!=" || operator == ">" || operator == "<" || operator == ">=" || operator == "<=" {
                 if left_type != right_type {
@@ -409,18 +468,19 @@ impl Parser {
                     operator, left_type, right_type, self.position
                 ));
             }
-    
+
             left = AST::new(ASTNode::BinaryOperation {
                 operator,
                 left: Box::new(left),
                 right: Box::new(right),
             });
-    
+
             left_type = self.infer_type(&left)?;
         }
-    
+
         Ok(left)
     }
+
     pub fn parse_list(&mut self) -> Result<AST, String> {
         if !self.current_token_is(TokenType::LeftBracket) {
             return Err(format!("Expected '[' at position {:?}. Found {:?}", self.position, self.current_token));
@@ -475,48 +535,8 @@ impl Parser {
         Ok(left)
     }
  
-    pub fn parse_factor(&mut self) -> Result<AST, String> {
-        match self.current_token {
-            Some(ref token) if token.token_type == TokenType::Number => {
-                let value = token.value.parse::<i64>()
-                    .map_err(|_| format!("Invalid integer format at position {:?}.", self.position))?;
-                self.advance();
-                Ok(AST::new(ASTNode::Int(value)))
-            },
-            Some(ref token) if token.token_type == TokenType::FloatNumber => {
-                let value = token.value.parse::<f64>()
-                    .map_err(|_| format!("Invalid float format at position {:?}.", self.position))?;
-                self.advance();
-                Ok(AST::new(ASTNode::Float(value)))
-            },
-            Some(ref token) if token.token_type == TokenType::Boolean => {
-                let value = token.value == "true";
-                self.advance();
-                Ok(AST::new(ASTNode::Boolean(value)))
-            },
-            Some(ref token) if token.token_type == TokenType::Identifier => {
-                let value = token.value.clone();
-                if self.symbol_table.lookup(&value).is_none() {
-                    return Err(format!("Undeclared variable '{}' at position {:?}.", value, self.position));
-                }
-                self.advance();
-                Ok(AST::new(ASTNode::Identifier(value)))
-            },
-            Some(ref token) if token.token_type == TokenType::LeftParen => {
-                self.advance(); 
-                let expr = self.parse_expression()?;
-                if !self.current_token_is(TokenType::RightParen) {
-                    return Err(format!("Expected ')' at position {:?}. Found {:?}", self.position, self.current_token));
-                }
-                self.advance(); 
-                Ok(expr)
-            },
-            Some(ref token) if token.token_type == TokenType::LeftBracket => {
-                self.parse_list()
-            },
-            _ => Err(format!("Unexpected token {:?} at position {:?}. Expected a number, float, identifier, boolean, or list.", self.current_token, self.position)),
-        }
-    }
+   
+
 /*    pub fn parse_assign_expr(&mut self) -> Result<AST, String> {
         if !self.current_token_is(TokenType::Assign) {
             return Err(format!(
@@ -538,6 +558,75 @@ impl Parser {
         self.advance();
         Ok(expr)
     } */
+    pub fn parse_factor(&mut self) -> Result<AST, String> {
+        match self.current_token {
+            Some(ref token) if token.token_type == TokenType::Number => {
+                let value = token.value.parse::<i64>()
+                    .map_err(|_| format!("Invalid integer format at position {:?}.", self.position))?;
+                self.advance();
+                Ok(AST::new(ASTNode::Int(value)))
+            },
+            Some(ref token) if token.token_type == TokenType::FloatNumber => {
+                let value = token.value.parse::<f64>()
+                    .map_err(|_| format!("Invalid float format at position {:?}.", self.position))?;
+                self.advance();
+                Ok(AST::new(ASTNode::Float(value)))
+            },
+            Some(ref token) if token.token_type == TokenType::Boolean => {
+                let value = token.value == "true";
+                self.advance();
+                Ok(AST::new(ASTNode::Boolean(value)))
+            },
+            Some(ref token) if token.token_type == TokenType::Identifier => {
+                let value = token.value.clone();
+                self.advance();
+                let mut expression = AST::new(ASTNode::Identifier(value));
+
+                // Check for method calls (fetch or len)
+                if self.current_token_is(TokenType::Dot) {
+                    self.advance(); // Consume the dot
+                
+                    match self.current_token {
+                        Some(ref token) if token.token_type == TokenType::Fetch => {
+                            self.advance(); // Consume 'fetch'
+                            expression = self.parse_fetch(expression)?;
+                        },
+                        Some(ref token) if token.token_type == TokenType::Len => {
+                            self.advance(); // Consume 'len'
+                            expression = self.parse_len(expression)?;
+                        },
+                        Some(ref token) => {
+                            return Err(format!(
+                                "Unknown method '{:?}' at position {:?}.",
+                                token.token_type, self.position
+                            ));
+                        },
+                        None => {
+                            return Err(format!(
+                                "Expected method name after '.' at position {:?}. Found None",
+                                self.position
+                            ));
+                        }
+                    }
+                }
+
+                Ok(expression)
+            },
+            Some(ref token) if token.token_type == TokenType::LeftParen => {
+                self.advance(); 
+                let expr = self.parse_expression()?;
+                if !self.current_token_is(TokenType::RightParen) {
+                    return Err(format!("Expected ')' at position {:?}. Found {:?}", self.position, self.current_token));
+                }
+                self.advance(); 
+                Ok(expr)
+            },
+            Some(ref token) if token.token_type == TokenType::LeftBracket => {
+                self.parse_list()
+            },
+            _ => Err(format!("Unexpected token {:?} at position {:?}. Expected a number, float, identifier, boolean, or list.", self.current_token, self.position)),
+        }
+    }
 
     pub fn parse_print(&mut self) -> Result<AST, String> {
         if !self.current_token_is(TokenType::Print) {
@@ -639,10 +728,18 @@ Ok(AST::new(ASTNode::Print(Box::new(expression))))
                     Err(format!("Type mismatch: fetch operation can only be performed on lists, found {:?}.", list_type))
                 }
             }
+            ASTNode::Len { list } => {
+                let list_type = self.infer_type(list)?;
+    
+                if let SymbolType::List(_) = list_type {
+                    Ok(SymbolType::Int)
+                } else {
+                    Err(format!("Type mismatch: len operation can only be performed on lists, found {:?}.", list_type))
+                }
+            }
             _ => Err(format!("Unknown AST node: {:?}", ast.node)),
         }
     }
-
     pub fn evaluate_expression(&self, ast: &AST) -> Result<SymbolValue, String> {
         match &ast.node {
             ASTNode::Int(value) => Ok(SymbolValue::Int(*value)),
@@ -745,6 +842,15 @@ Ok(AST::new(ASTNode::Print(Box::new(expression))))
                     Ok(SymbolValue::List(elements))
                 } else {
                     Err("Push operation can only be performed on lists.".to_string())
+                }
+            }
+            ASTNode::Len { ref list } => {
+                let list_value = self.evaluate_expression(list)?;
+
+                if let SymbolValue::List(elements) = list_value {
+                    Ok(SymbolValue::Int(elements.len() as i64))
+                } else {
+                    Err("Len operation can only be performed on lists.".to_string())
                 }
             }
             _ => Err(format!("Cannot evaluate AST node {:?}", ast.node)),

@@ -65,17 +65,20 @@ Factor      → Number
 
 List        → '[' (Expression (',' Expression)*)? ']'
 
+ListIndex   → Identifier '[' Expression ']'
 
-Fetch       → List '.' 'fetch' '(' Index ')'
+MethodCall  → Identifier '.' MethodName '(' (Expression)? ')'
+
+MethodName  → 'fetch' | 'len'
  ```
 
 
 ## Latest Update
-- Add Loop and break statement
+- Add len method for Lists.
 
 ## Next Steps
 
-- Add len method for Lists.
+- add tests
 
 ## Language Features
 

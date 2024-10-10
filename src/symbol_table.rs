@@ -106,8 +106,8 @@ impl SymbolTable {
     }
 
     pub fn print(&self) {
-        for (i, scope) in self.scopes.iter().enumerate() {
-            println!("Scope {}: {:?}", i, scope);
+        for (_i, _scope) in self.scopes.iter().enumerate() {
+            //println!("Scope {}: {:?}", i, scope);
         }
     }
 }

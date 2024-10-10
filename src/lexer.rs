@@ -89,6 +89,7 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, String> {
                     "push" => TokenType::Push,
                     "pop" => TokenType::Pop,
                     "loop" => TokenType::Loop,
+                    "len" => TokenType::Len,
                     "break" => TokenType::Break,
                     _ => TokenType::Identifier,
                 };

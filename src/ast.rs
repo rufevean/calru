@@ -36,6 +36,9 @@ pub enum ASTNode {
         body: Box<AST>,
     },
     Break,
+    Len {
+        list: Box<AST>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -96,6 +99,9 @@ impl fmt::Display for ASTNode {
             }
             ASTNode::BinaryOperation { left, right, operator } => {
                 write!(f, "BinaryOperation({} {} {})", left, operator, right)
+            }
+            ASTNode::Len { list } => {
+                write!(f, "Len({}.len())", list)
             }
         }
     }

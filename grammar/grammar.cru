@@ -50,4 +50,6 @@ List        → '[' (Expression (',' Expression)*)? ']'
 
 ListIndex   → Identifier '[' Expression ']'
 
-Fetch       → List '.' 'fetch' '(' Index ')'
+MethodCall  → Identifier '.' MethodName '(' (Expression)? ')'
+
+MethodName  → 'fetch' | 'len'

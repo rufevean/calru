@@ -95,11 +95,20 @@ impl Interpreter {
                     }
                 }
             },
+            ASTNode::Len { list } => {
+                let list_value = self.evaluate_expression(list)?;
+                if let SymbolValue::List(elements) = list_value {
+                    println!("{}", elements.len());
+                } else {
+                    return Err("Len operation can only be performed on lists.".to_string());
+                }
+            },
             ASTNode::Break => return Err("break".to_string()),
             _ => return Err(format!("Unsupported statement {:?}", ast.node)),
         }
         Ok(())
     }
+
     fn evaluate_expression(&self, expression: &AST) -> Result<SymbolValue, String> {
         match &expression.node {
             ASTNode::Int(value) => Ok(SymbolValue::Int(*value)),
@@ -240,10 +249,20 @@ impl Interpreter {
                 } else {
                     Err("Fetch operation can only be performed on lists.".to_string())
                 }
-            }
+            },
+            ASTNode::Len { list } => {
+                let list_value = self.evaluate_expression(list)?;
+    
+                if let SymbolValue::List(elements) = list_value {
+                    Ok(SymbolValue::Int(elements.len() as i64))
+                } else {
+                    Err("Len operation can only be performed on lists.".to_string())
+                }
+            },
             _ => Err(format!("Cannot evaluate expression node {:?}", expression.node)),
         }
     }
+
     fn infer_type(&self, node: &AST) -> Result<SymbolType, String> {
         match &node.node {
             ASTNode::Int(_) => Ok(SymbolType::Int),
@@ -287,6 +306,15 @@ impl Interpreter {
                     Ok(*element_type)
                 } else {
                     Err(format!("Type mismatch: pop operation can only be performed on lists, found {:?}.", list_type))
+                }
+            },
+            ASTNode::Len { list } => {
+                let list_type = self.infer_type(list)?;
+    
+                if let SymbolType::List(_) = list_type {
+                    Ok(SymbolType::Int)
+                } else {
+                    Err("Len operation can only be performed on lists.".to_string())
                 }
             },
             ASTNode::Assignment { expression, .. } => self.infer_type(expression),
@@ -343,7 +371,6 @@ impl Interpreter {
                 Ok(SymbolType::Void) 
             },
             ASTNode::Break => Ok(SymbolType::Void), 
-            _ => Err(format!("Unsupported node type {:?}", node.node)),
         }
     }
 }
